@@ -1,0 +1,149 @@
+[
+    {
+        "id": 7,
+        "user_id": null,
+        "customer_name": "Chetsothea",
+        "customer_email": "Thea@gmail.com",
+        "total": 1829,
+        "status": "pending",
+        "payment_method": "khqr",
+        "payment_status": "verifying",
+        "transaction_ref": "182001992939",
+        "phone": "092838387",
+        "address": "ភូមិអូរកំបុត, ឃុំព្រែកខ្ពប, ស្រុកឯកភ្នំ, ខេត្តបាត់ដំបង, កម្ពុជា",
+        "created_at": "2026-11-01T02:41:07.000000Z",
+        "updated_at": "2026-11-01T02:43:28.000000Z",
+        "user": null,
+        "items": [
+            {
+                "id": 7,
+                "order_id": 7,
+                "product_id": 1,
+                "qty": 1,
+                "color": "Silver",
+                "storage": "512GB",
+                "price": 1829,
+                "created_at": "2026-11-01T02:41:08.000000Z",
+                "updated_at": "2026-11-01T02:41:08.000000Z",
+                "product": {
+                    "id": 1,
+                    "category_id": 1,
+                    "name": "iPhone 15 Pro",
+                    "brand": "Apple",
+                    "price": 1539,
+                    "old_price": null,
+                    "condition": "New",
+                    "stock": 8,
+                    "ram": "8GB",
+                    "storage": "256GB, 512GB, 1TB, 2TB",
+                    "storage_prices": [
+                        {
+                            "price": 1539,
+                            "storage": "256GB"
+                        },
+                        {
+                            "price": 1829,
+                            "storage": "512GB"
+                        },
+                        {
+                            "price": 2389,
+                            "storage": "1TB"
+                        },
+                        {
+                            "price": 2999,
+                            "storage": "2TB"
+                        }
+                    ],
+                    "color": "Black, Silver, Glacier",
+                    "description": "iPhone 15 Pro ពី Apple ថ្មី 100% ធានា 1 ឆ្នាំ",
+                    "created_at": "2026-10-21T02:57:07.000000Z",
+                    "updated_at": "2026-11-01T02:41:07.000000Z",
+                    "image_url": "http:\/\/127.0.0.1:8000\/uploads\/5noIlhjyjz0BYD6B9nLW.jpg",
+                    "color_image_urls": {
+                        "Black": "http:\/\/127.0.0.1:8000\/uploads\/RAUHAEXXCdjKmc7RGJ21.jpg",
+                        "Glacier": "http:\/\/127.0.0.1:8000\/uploads\/LIMWoljl49RB6Zd2Nnhg.jpg"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "id": 1,
+        "user_id": 6,
+        "customer_name": null,
+        "customer_email": null,
+        "total": 999,
+        "status": "pending",
+        "payment_method": "khqr",
+        "payment_status": "unpaid",
+        "transaction_ref": null,
+        "phone": "09283892",
+        "address": "battabang\/btb\/",
+        "created_at": "2026-10-31T09:16:58.000000Z",
+        "updated_at": "2026-10-31T09:16:58.000000Z",
+        "user": {
+            "id": 6,
+            "name": "Thea",
+            "email": "Thea@gmai.com",
+            "email_verified_at": null,
+            "phone": "09283892",
+            "address": "battabang\/btb\/",
+            "telegram": null,
+            "role": "user",
+            "created_at": "2026-10-31T09:16:40.000000Z",
+            "updated_at": "2026-10-31T09:16:40.000000Z"
+        },
+        "items": [
+            {
+                "id": 1,
+                "order_id": 1,
+                "product_id": 1,
+                "qty": 1,
+                "color": null,
+                "storage": null,
+                "price": 999,
+                "created_at": "2026-10-31T09:16:58.000000Z",
+                "updated_at": "2026-10-31T09:16:58.000000Z",
+                "product": {
+                    "id": 1,
+                    "category_id": 1,
+                    "name": "iPhone 15 Pro",
+                    "brand": "Apple",
+                    "price": 1539,
+                    "old_price": null,
+                    "condition": "New",
+                    "stock": 8,
+                    "ram": "8GB",
+                    "storage": "256GB, 512GB, 1TB, 2TB",
+                    "storage_prices": [
+                        {
+                            "price": 1539,
+                            "storage": "256GB"
+                        },
+                        {
+                            "price": 1829,
+                            "storage": "512GB"
+                        },
+                        {
+                            "price": 2389,
+                            "storage": "1TB"
+                        },
+                        {
+                            "price": 2999,
+                            "storage": "2TB"
+                        }
+                    ],
+                    "color": "Black, Silver, Glacier",
+                    "description": "iPhone 15 Pro ពី Apple ថ្មី 100% ធានា 1 ឆ្នាំ",
+                    "created_at": "2026-10-21T02:57:07.000000Z",
+                    "updated_at": "2026-11-01T02:41:07.000000Z",
+                    "image_url": "http:\/\/127.0.0.1:8000\/uploads\/5noIlhjyjz0BYD6B9nLW.jpg",
+                    "color_image_urls": {
+                        "Black": "http:\/\/127.0.0.1:8000\/uploads\/RAUHAEXXCdjKmc7RGJ21.jpg",
+                        "Glacier": "http:\/\/127.0.0.1:8000\/uploads\/LIMWoljl49RB6Zd2Nnhg.jpg"
+                    }
+                }
+            }
+        ]
+    }
+]

@@ -1,0 +1,25 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.bak
+*.backup
+
+# Node / PHP
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+
+# Flutter / Dart
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+**/flutter/ephemeral/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
