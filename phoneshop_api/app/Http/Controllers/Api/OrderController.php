@@ -286,11 +286,22 @@ class OrderController extends Controller
     {
         abort_unless($order->isOwnedBy($request), 404);
 
-        if ($order->status !== 'pending' || $order->payment_status !== 'unpaid') {
-            return response()->json(['message' => 'អាចបោះបង់បានតែ Order ដែលនៅ Pending និងមិនទាន់បង់ប្រាក់ប៉ុណ្ណោះ'], 422);
+        // Only before it leaves the shop: just placed, or being packed
+        if (! $order->can_cancel) {
+            $message = in_array($order->status, ['shipping', 'delivered'], true)
+                ? 'Order នេះចាប់ផ្តើមដឹកជញ្ជូនហើយ មិនអាចបោះបង់បានទេ។ សូមទាក់ទងហាង'
+                : 'Order នេះមិនអាចបោះបង់បានទេ';
+
+            return response()->json(['message' => $message], 422);
         }
 
-        $order->cancelAndRestock();
+        // Money already came in: the shop owes it back, and the timeline says so
+        $note = match ($order->payment_status) {
+            'paid' => 'អតិថិជនបានបោះបង់ · ហាងត្រូវបង្វិលប្រាក់ $'.number_format($order->total, 2),
+            'verifying' => 'អតិថិជនបានបោះបង់ · ពិនិត្យការបង់ប្រាក់ ហើយបង្វិលប្រាក់បើបានទទួល',
+            default => 'អតិថិជនបានបោះបង់ Order',
+        };
+        $order->cancelAndRestock($note);
 
         return $order->load(['items.product', 'trackings']);
     }

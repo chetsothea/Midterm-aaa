@@ -24,7 +24,7 @@ class Order extends Model
 
     protected $casts = ['bakong_checked_at' => 'datetime'];
 
-    protected $appends = ['pay_before'];
+    protected $appends = ['pay_before', 'can_cancel'];
 
     // Shown to the customer when the admin doesn't type a note of their own
     public const TRACKING_NOTES = [
@@ -169,6 +169,15 @@ class Order extends Model
         if ($this->voucher_code) {
             Voucher::where('code', $this->voucher_code)->where('used_count', '>', 0)->decrement('used_count');
         }
+    }
+
+    // The customer may cancel until the order leaves the shop: while it is
+    // new (pending) or being packed (confirmed), not once it is shipping
+    public const CUSTOMER_CANCELLABLE = ['pending', 'confirmed'];
+
+    public function getCanCancelAttribute(): bool
+    {
+        return in_array($this->status, self::CUSTOMER_CANCELLABLE, true);
     }
 
     // A KHQR order holds its phones only this long while nobody has paid

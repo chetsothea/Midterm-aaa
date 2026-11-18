@@ -113,10 +113,15 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       color: Colors.red,
       title: trf('បោះបង់ Order នេះ?', 'Cancel this order?'),
       code: order.ref,
-      message: trf(
-        'Order នឹងត្រូវបានបោះបង់ ហើយមិនអាចយកមកវិញបានទេ។',
-        "The order will be cancelled and can't be brought back.",
-      ),
+      message: order.paymentStatus == 'unpaid'
+          ? trf(
+              'Order នឹងត្រូវបានបោះបង់ ហើយមិនអាចយកមកវិញបានទេ។',
+              "The order will be cancelled and can't be brought back.",
+            )
+          : trf(
+              'Order នឹងត្រូវបានបោះបង់។ ហាងនឹងទាក់ទងអ្នក ដើម្បីបង្វិលប្រាក់ ${money(order.total)}។',
+              'The order will be cancelled. The shop will contact you to refund ${money(order.total)}.',
+            ),
       cancelLabel: trf('ទេ, រក្សាទុក', 'No, keep it'),
       confirmLabel: trf('បោះបង់', 'Yes, cancel'),
     );
@@ -302,8 +307,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         order.paymentMethod == 'khqr' &&
         order.paymentStatus == 'unpaid' &&
         order.status != 'cancelled';
-    final canCancel =
-        order.status == 'pending' && order.paymentStatus == 'unpaid';
+    // New or being packed: yes. Shipping or later: no (the server checks too)
+    final canCancel = order.canCancel;
     final color = statusColor(order.status);
     final first = order.items.isEmpty ? null : order.items.first;
     final more = order.items.length - 1;

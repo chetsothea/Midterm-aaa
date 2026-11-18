@@ -116,6 +116,8 @@ class Order {
   final double discount;
   final String voucherCode;
   final DateTime? deliveredAt; // the phones' warranty starts here
+  // The customer may cancel while it is new or being packed, not once shipping
+  final bool canCancel;
 
   Order({
     required this.id,
@@ -145,6 +147,7 @@ class Order {
     this.discount = 0,
     this.voucherCode = '',
     this.deliveredAt,
+    this.canCancel = false,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -166,6 +169,10 @@ class Order {
       shippingFee: double.tryParse('${json['shipping_fee'] ?? 0}') ?? 0,
       discount: double.tryParse('${json['discount'] ?? 0}') ?? 0,
       voucherCode: '${json['voucher_code'] ?? ''}',
+      // From the server; older servers didn't send it, so work it out the same way
+      canCancel:
+          json['can_cancel'] as bool? ??
+          const ['pending', 'confirmed'].contains(json['status']),
       deliveredAt: DateTime.tryParse(
         '${json['delivered_at'] ?? ''}',
       )?.toLocal(),
