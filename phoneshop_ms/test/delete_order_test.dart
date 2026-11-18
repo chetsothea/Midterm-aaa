@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/screens/admin/admin_orders_tab.dart';
 import 'package:phoneshop_ms/data/api_service.dart';
+import 'package:phoneshop_ms/data/models/user.dart';
 
 void main() {
   testWidgets('deleting an order asks first, and only yes removes it', (
@@ -13,7 +14,16 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(400, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    addTearDown(() => ApiService.token = null);
+    ApiService.currentUser = User(
+      id: 1,
+      name: 'Boss',
+      email: 'boss@example.com',
+      role: 'admin',
+    );
+    addTearDown(() {
+      ApiService.token = null;
+      ApiService.currentUser = null;
+    });
 
     final orders = [
       <String, dynamic>{

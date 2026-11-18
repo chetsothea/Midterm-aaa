@@ -1,7 +1,7 @@
+import 'forgot_password_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../data/models/user.dart';
 import '../data/api_service.dart';
 import '../data/google_auth.dart';
@@ -140,9 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // Admins go to the admin panel; customers go back to where they were in the store
+  // Admins and staff go to the admin panel; customers go back to where they were
   void _finish(User user) {
-    if (user.isAdmin) {
+    if (user.isTeam) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
@@ -189,42 +189,16 @@ class _LoginScreenState extends State<LoginScreen> {
     if (user != null && mounted) _finish(user);
   }
 
-  // There is no e-mail reset yet, so the admin resets it for the customer over Telegram
+  // A 6-digit code by e-mail, then a new password (Telegram is offered there too)
   void _forgotPassword() async {
-    final contact = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(tr('Forgot password?')),
-        content: Text(
-          tr('សូមទាក់ទង Admin តាម Telegram ដើម្បីកំណត់ពាក្យសម្ងាត់ថ្មី។'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(tr('បិទ')),
-          ),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: authAccent),
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.send, size: 18),
-            label: const Text('Telegram'),
-          ),
-        ],
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ForgotPasswordScreen(email: _emailController.text.trim()),
       ),
     );
-    if (contact != true) return;
-    try {
-      final username =
-          ((await ApiService.fetchMenu())['telegram'] ?? '') as String;
-      if (username.isEmpty) throw tr('ហាងមិនទាន់បានកំណត់ Telegram');
-      final opened = await launchUrl(
-        Uri.parse('https://t.me/$username'),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!opened) throw tr('មិនអាចបើក Telegram បានទេ');
-    } catch (e) {
-      if (mounted) showMessage(context, e.toString(), error: true);
-    }
+    if (changed == true) _passwordController.clear();
   }
 
   @override

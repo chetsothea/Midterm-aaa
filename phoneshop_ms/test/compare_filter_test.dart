@@ -45,10 +45,10 @@ void main() {
       const ProductFilter(brands: {'Apple'}).apply(phones).map((p) => p.id),
       [1],
     );
-    expect(
-      const ProductFilter(maxPrice: 800).apply(phones).map((p) => p.id),
-      [2, 3],
-    );
+    expect(const ProductFilter(maxPrice: 800).apply(phones).map((p) => p.id), [
+      2,
+      3,
+    ]);
     // A size picked among a phone's options counts too
     expect(
       const ProductFilter(storages: {'512GB'}).apply(phones).map((p) => p.id),
@@ -66,12 +66,17 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(400, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
-      MaterialApp(home: CompareScreen(phones: phones, first: phones[0])),
+      MaterialApp(
+        home: CompareScreen(phones: phones, first: phones[0]),
+      ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('iPhone 17'), findsOneWidget);
-    expect(find.text('Galaxy S26'), findsOneWidget); // the next one, on the right
+    expect(
+      find.text('Galaxy S26'),
+      findsOneWidget,
+    ); // the next one, on the right
     expect(find.text('\$999.00'), findsOneWidget);
     expect(find.text('\$799.00'), findsOneWidget);
     expect(find.text('12GB'), findsOneWidget); // RAM

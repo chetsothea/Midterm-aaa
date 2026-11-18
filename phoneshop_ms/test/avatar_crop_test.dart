@@ -10,8 +10,14 @@ import 'package:phoneshop_ms/screens/avatar_crop_screen.dart';
 Future<Uint8List> tallPicture() async {
   final recorder = ui.PictureRecorder();
   Canvas(recorder)
-    ..drawRect(const Rect.fromLTWH(0, 0, 2, 2), Paint()..color = const Color(0xFFFF0000))
-    ..drawRect(const Rect.fromLTWH(0, 2, 2, 2), Paint()..color = const Color(0xFF0000FF));
+    ..drawRect(
+      const Rect.fromLTWH(0, 0, 2, 2),
+      Paint()..color = const Color(0xFFFF0000),
+    )
+    ..drawRect(
+      const Rect.fromLTWH(0, 2, 2, 2),
+      Paint()..color = const Color(0xFF0000FF),
+    );
   final image = await recorder.endRecording().toImage(2, 4);
   final png = await image.toByteData(format: ui.ImageByteFormat.png);
   return png!.buffer.asUint8List();
@@ -23,7 +29,12 @@ void main() {
 
     test('not moved or zoomed: the top of the picture, full width', () {
       expect(
-        avatarCropRect(picture: tall, viewport: 400, scale: 1, offset: Offset.zero),
+        avatarCropRect(
+          picture: tall,
+          viewport: 400,
+          scale: 1,
+          offset: Offset.zero,
+        ),
         const Rect.fromLTWH(0, 0, 800, 800),
       );
     });
@@ -95,7 +106,11 @@ void main() {
 
     // Decoding needs real time
     await tester.runAsync(() async {
-      for (var i = 0; i < 50 && !tester.any(find.byType(InteractiveViewer)); i++) {
+      for (
+        var i = 0;
+        i < 50 && !tester.any(find.byType(InteractiveViewer));
+        i++
+      ) {
         await Future.delayed(const Duration(milliseconds: 20));
         await tester.pump();
       }

@@ -2,9 +2,14 @@
 
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\PaymentAccountController;
+use App\Http\Controllers\Api\Admin\ReportController;
+use App\Http\Controllers\Api\Admin\StaffController;
 use App\Http\Controllers\Api\Admin\VoucherController;
 use App\Http\Controllers\Api\Admin\WarrantyController;
+use App\Http\Controllers\Api\NoticeController;
+use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SavedListsController;
+use App\Http\Controllers\Api\TradeInController;
 use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\LiveController;
@@ -13,10 +18,14 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Middleware\AdminOnly;
+use App\Http\Middleware\ShopTeam;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+// Forgot password: a code by e-mail, then code + new password
+Route::post('/password/code', [PasswordResetController::class, 'send'])->middleware('throttle:5,10');
+Route::post('/password/reset', [PasswordResetController::class, 'reset'])->middleware('throttle:10,10');
 Route::get('/auth/google-config', [AuthController::class, 'googleConfig']);
 Route::post('/auth/google', [AuthController::class, 'google'])->middleware('throttle:login');
 
@@ -61,14 +70,46 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{order}/received', [OrderController::class, 'received']);
 
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->middleware('throttle:10,1');
+
+    // The 🔔 inbox
+    Route::get('/notices', [NoticeController::class, 'index']);
+    Route::post('/notices/read', [NoticeController::class, 'readAll']);
+
+    // Trade-in: the customer's own requests
+    Route::get('/trade-ins', [TradeInController::class, 'mine']);
+    Route::post('/trade-ins', [TradeInController::class, 'store'])->middleware('throttle:10,1');
+    Route::post('/trade-ins/{tradeIn}/accept', [TradeInController::class, 'accept']);
+    Route::post('/trade-ins/{tradeIn}/decline', [TradeInController::class, 'decline']);
+    Route::post('/trade-ins/{tradeIn}/cancel', [TradeInController::class, 'cancel']);
     Route::post('/live/comments', [LiveController::class, 'postComment'])->middleware('throttle:20,1');
 
+    // Admin and staff: the day-to-day work on orders
+    Route::middleware(ShopTeam::class)->prefix('admin')->group(function () {
+        Route::get('/orders', [AdminOrderController::class, 'index']);
+        Route::post('/orders/received-seen', [AdminOrderController::class, 'markReceivedSeen']);
+        Route::get('/orders/new', [AdminOrderController::class, 'newOrders']);
+        Route::put('/orders/{order}', [AdminOrderController::class, 'update']);
+        Route::post('/orders/{order}/tracking', [AdminOrderController::class, 'addTracking']);
+        Route::put('/orders/{order}/tracking/{tracking}', [AdminOrderController::class, 'updateTracking']);
+        Route::put('/order-items/{item}/imeis', [WarrantyController::class, 'setImeis']);
+        Route::get('/warranty/{imei}', [WarrantyController::class, 'lookup']);
+        Route::put('/live', [LiveController::class, 'update']);
+        Route::delete('/live/comments/{comment}', [LiveController::class, 'deleteComment']);
+    });
+
+    // Admin only: money, prices, settings and accounts
     Route::middleware(AdminOnly::class)->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminOrderController::class, 'dashboard']);
+        Route::get('/reports/sales', [ReportController::class, 'sales']);
+        Route::get('/reports/sales.csv', [ReportController::class, 'salesCsv']);
         Route::get('/customers', [AdminOrderController::class, 'customers']);
         Route::put('/customers/{user}', [AdminOrderController::class, 'updateCustomer']);
         Route::put('/customers/{user}/blocked', [AdminOrderController::class, 'setCustomerBlocked']);
         Route::delete('/customers/{user}', [AdminOrderController::class, 'deleteCustomer']);
+        Route::get('/staff', [StaffController::class, 'index']);
+        Route::post('/staff', [StaffController::class, 'store']);
+        Route::put('/staff/{user}', [StaffController::class, 'update']);
+        Route::delete('/staff/{user}', [StaffController::class, 'destroy']);
         Route::get('/payment-accounts', [PaymentAccountController::class, 'index']);
         Route::post('/payment-accounts', [PaymentAccountController::class, 'store']);
         Route::post('/payment-accounts/{paymentAccount}', [PaymentAccountController::class, 'update']);
@@ -79,22 +120,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/vouchers/{voucher}', [VoucherController::class, 'update']);
         Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy']);
         Route::put('/settings/shipping', [VoucherController::class, 'updateShipping']);
-        Route::put('/order-items/{item}/imeis', [WarrantyController::class, 'setImeis']);
-        Route::get('/warranty/{imei}', [WarrantyController::class, 'lookup']);
-
-        Route::put('/live', [LiveController::class, 'update']);
-        Route::delete('/live/comments/{comment}', [LiveController::class, 'deleteComment']);
+        Route::get('/trade-ins', [TradeInController::class, 'index']);
+        Route::put('/trade-ins/{tradeIn}/offer', [TradeInController::class, 'offer']);
+        Route::post('/trade-ins/{tradeIn}/reject', [TradeInController::class, 'reject']);
+        Route::post('/trade-ins/{tradeIn}/complete', [TradeInController::class, 'complete']);
 
         Route::post('/products', [AdminProductController::class, 'store']);
         Route::post('/products/{product}', [AdminProductController::class, 'update']);
         Route::delete('/products/{product}', [AdminProductController::class, 'destroy']);
 
-        Route::get('/orders', [AdminOrderController::class, 'index']);
-        Route::post('/orders/received-seen', [AdminOrderController::class, 'markReceivedSeen']);
-        Route::get('/orders/new', [AdminOrderController::class, 'newOrders']);
-        Route::put('/orders/{order}', [AdminOrderController::class, 'update']);
         Route::delete('/orders/{order}', [AdminOrderController::class, 'destroy']);
-        Route::post('/orders/{order}/tracking', [AdminOrderController::class, 'addTracking']);
-        Route::put('/orders/{order}/tracking/{tracking}', [AdminOrderController::class, 'updateTracking']);
     });
 });

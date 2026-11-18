@@ -151,31 +151,34 @@ void main() {
     );
   });
 
-  testWidgets('the received button also shows on a delivered order until confirmed', (
-    tester,
-  ) async {
-    final delivered = orderJson('delivered', []);
-    await http.runWithClient(() async {
-      ApiService.token = 'test';
-      await tester.pumpWidget(
-        MaterialApp(home: OrderTrackingScreen(order: Order.fromJson(delivered))),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('ខ្ញុំបានទទួលឥវ៉ាន់ហើយ'), findsOneWidget);
-    }, () => MockClient((_) async => json(delivered)));
+  testWidgets(
+    'the received button also shows on a delivered order until confirmed',
+    (tester) async {
+      final delivered = orderJson('delivered', []);
+      await http.runWithClient(() async {
+        ApiService.token = 'test';
+        await tester.pumpWidget(
+          MaterialApp(
+            home: OrderTrackingScreen(order: Order.fromJson(delivered)),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('ខ្ញុំបានទទួលឥវ៉ាន់ហើយ'), findsOneWidget);
+      }, () => MockClient((_) async => json(delivered)));
 
-    final confirmed = {...delivered, 'received_at': '2026-11-03T04:00:00Z'};
-    await http.runWithClient(() async {
-      await tester.pumpWidget(
-        MaterialApp(
-          key: const ValueKey('confirmed'),
-          home: OrderTrackingScreen(order: Order.fromJson(confirmed)),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('ខ្ញុំបានទទួលឥវ៉ាន់ហើយ'), findsNothing);
-    }, () => MockClient((_) async => json(confirmed)));
-  });
+      final confirmed = {...delivered, 'received_at': '2026-11-03T04:00:00Z'};
+      await http.runWithClient(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            key: const ValueKey('confirmed'),
+            home: OrderTrackingScreen(order: Order.fromJson(confirmed)),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('ខ្ញុំបានទទួលឥវ៉ាន់ហើយ'), findsNothing);
+      }, () => MockClient((_) async => json(confirmed)));
+    },
+  );
 
   testWidgets('the received button stays hidden before the parcel is sent', (
     tester,

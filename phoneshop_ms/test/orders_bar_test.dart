@@ -9,13 +9,17 @@ import 'package:phoneshop_ms/screens/my_orders_screen.dart';
 import 'package:phoneshop_ms/data/api_service.dart';
 
 void main() {
-  final mock = MockClient((request) async => http.Response(
-    jsonEncode(request.url.path.endsWith('/menu')
-        ? {'brands': [], 'categories': []}
-        : []),
-    200,
-    headers: {'content-type': 'application/json; charset=utf-8'},
-  ));
+  final mock = MockClient(
+    (request) async => http.Response(
+      jsonEncode(
+        request.url.path.endsWith('/menu')
+            ? {'brands': [], 'categories': []}
+            : [],
+      ),
+      200,
+      headers: {'content-type': 'application/json; charset=utf-8'},
+    ),
+  );
 
   testWidgets('five items fit a narrow phone, with Telegram in the middle', (
     tester,
@@ -28,7 +32,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
-      for (final label in ['ទំព័រដើម', 'កន្ត្រក', 'Telegram', 'ការបញ្ជាទិញ', 'គណនី']) {
+      for (final label in [
+        'ទំព័រដើម',
+        'កន្ត្រក',
+        'Telegram',
+        'ការបញ្ជាទិញ',
+        'គណនី',
+      ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
       final telegram = tester.getCenter(find.text('Telegram')).dx;
@@ -36,7 +46,9 @@ void main() {
     }, () => mock);
   });
 
-  testWidgets('a guest is asked to log in before seeing orders', (tester) async {
+  testWidgets('a guest is asked to log in before seeing orders', (
+    tester,
+  ) async {
     await http.runWithClient(() async {
       await tester.pumpWidget(const MyApp(showSplash: false));
       await tester.pumpAndSettle();

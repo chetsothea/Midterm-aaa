@@ -828,12 +828,14 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                 icon: const Icon(Icons.receipt_long_outlined, size: 18),
                 label: const Text('វិក្កយបត្រ'),
               ),
-              TextButton.icon(
-                onPressed: () => _confirmDelete(order),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('លុប Order'),
-              ),
+              // Deleting an order is the admin's call, not staff's
+              if (ApiService.currentUser?.isAdmin ?? false)
+                TextButton.icon(
+                  onPressed: () => _confirmDelete(order),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('លុប Order'),
+                ),
             ],
           ),
         ],

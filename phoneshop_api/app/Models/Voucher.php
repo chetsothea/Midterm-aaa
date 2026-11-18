@@ -9,7 +9,7 @@ class Voucher extends Model
 {
     protected $fillable = [
         'code', 'type', 'value', 'min_total', 'max_discount',
-        'max_uses', 'used_count', 'expires_at', 'active',
+        'max_uses', 'used_count', 'expires_at', 'active', 'user_id',
     ];
 
     protected function casts(): array
@@ -46,6 +46,10 @@ class Voucher extends Model
     {
         if (! $this->active) {
             return 'កូដនេះត្រូវបានបិទ';
+        }
+        // A trade-in credit: only for the customer who traded their phone
+        if ($this->user_id && $this->user_id !== $userId) {
+            return 'រកមិនឃើញកូដនេះទេ';
         }
         if ($this->expires_at && $this->expires_at->isPast()) {
             return 'កូដនេះផុតកំណត់ហើយ';

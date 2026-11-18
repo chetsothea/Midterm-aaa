@@ -1,3 +1,4 @@
+import 'trade_in_screen.dart';
 import 'package:flutter/material.dart';
 import '../data/api_service.dart';
 import '../hooks/cart.dart';
@@ -416,6 +417,23 @@ class _AccountScreenState extends State<AccountScreen> {
                     tr('ចូលចិត្ត'),
                     trf('ទូរស័ព្ទដែលអ្នករក្សាទុក', 'Phones you saved'),
                     _favorites,
+                  ),
+                  const Divider(height: 1, indent: 66),
+                  _menuItem(
+                    Icons.swap_horiz_rounded,
+                    const Color(0xFF30D158),
+                    trf(
+                      'ប្តូរទូរស័ព្ទចាស់ (Trade-in)',
+                      'Trade in your old phone',
+                    ),
+                    trf(
+                      'លក់ទូរស័ព្ទចាស់ ជាកូដបញ្ចុះទិញថ្មី',
+                      'Turn it into credit for a new one',
+                    ),
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TradeInScreen()),
+                    ),
                   ),
                 ],
               ),

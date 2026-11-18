@@ -26,3 +26,5 @@ Thumbs.db
 
 # Real bank QR codes uploaded from Admin (kept out of the public repo)
 phoneshop_api/public/uploads/qr_*
+# Customers' trade-in photos
+phoneshop_api/public/uploads/tradein_*

@@ -21,12 +21,18 @@ void main() {
     await tester.pump(SplashScreen.duration);
     await tester.pumpAndSettle();
 
-    expect(find.image(const AssetImage('assets/images/logo.png')), findsNothing);
+    expect(
+      find.image(const AssetImage('assets/images/logo.png')),
+      findsNothing,
+    );
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     // Back can't return to the launch screen: the store is the only page
-    expect(Navigator.of(tester.element(find.byType(HomeScreen))).canPop(), isFalse);
+    expect(
+      Navigator.of(tester.element(find.byType(HomeScreen))).canPop(),
+      isFalse,
+    );
   });
 
   testWidgets('it fits a small phone', (tester) async {

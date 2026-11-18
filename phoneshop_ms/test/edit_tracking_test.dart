@@ -91,7 +91,11 @@ void main() {
         home: Scaffold(
           body: TrackingTimeline(
             steps: [
-              TrackingStep(id: 5, status: 'shipping', time: DateTime(2026, 11, 2)),
+              TrackingStep(
+                id: 5,
+                status: 'shipping',
+                time: DateTime(2026, 11, 2),
+              ),
             ],
           ),
         ),

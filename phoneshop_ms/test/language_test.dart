@@ -16,18 +16,25 @@ void main() {
   testWidgets('switching to English changes the open page at once, and back', (
     tester,
   ) async {
-    final mock = MockClient((request) async => http.Response(
-      jsonEncode(request.url.path.endsWith('/products')
-          ? []
-          : {'brands': [], 'categories': []}),
-      200,
-      headers: {'content-type': 'application/json; charset=utf-8'},
-    ));
+    final mock = MockClient(
+      (request) async => http.Response(
+        jsonEncode(
+          request.url.path.endsWith('/products')
+              ? []
+              : {'brands': [], 'categories': []},
+        ),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
 
     await http.runWithClient(() async {
       await tester.pumpWidget(const MyApp(showSplash: false));
       await tester.pumpAndSettle();
-      expect(find.text('ទំព័រដើម'), findsOneWidget); // bottom menu, Khmer by default
+      expect(
+        find.text('ទំព័រដើម'),
+        findsOneWidget,
+      ); // bottom menu, Khmer by default
 
       await tester.tap(find.byTooltip('Language'));
       await tester.pumpAndSettle();

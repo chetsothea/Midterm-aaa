@@ -11,7 +11,12 @@ import 'package:phoneshop_ms/components/product_card.dart';
 
 const dealsTitle = 'កំពុងបញ្ចុះតម្លៃ';
 
-Map<String, dynamic> phone(int id, String name, {num? oldPrice, int stock = 5}) => {
+Map<String, dynamic> phone(
+  int id,
+  String name, {
+  num? oldPrice,
+  int stock = 5,
+}) => {
   'id': id,
   'name': name,
   'brand': 'Apple',
@@ -35,9 +40,7 @@ Future<List<String>> pumpStore(
     if (isProducts) asked.add(request.url.queryParameters['brand'] ?? '');
     return http.Response(
       jsonEncode(
-        isProducts
-            ? phones
-            : {'brands': brands, 'categories': <Object>[]},
+        isProducts ? phones : {'brands': brands, 'categories': <Object>[]},
       ),
       200,
       headers: {'content-type': 'application/json; charset=utf-8'},
@@ -62,10 +65,12 @@ void main() {
         expect(find.byType(BrandRow), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        await tester.tap(find.descendant(
-          of: find.byType(BrandRow),
-          matching: find.text('Samsung'),
-        ));
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BrandRow),
+            matching: find.text('Samsung'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(BrandRow), findsNothing);
@@ -95,12 +100,17 @@ void main() {
           matching: find.byType(CustomScrollView),
         );
         final deals = tester
-            .widgetList<ProductCard>(find.descendant(
-              of: find.byWidgetPredicate(
-                (w) => w is ListView && w.scrollDirection == Axis.horizontal,
-              ).last,
-              matching: find.byType(ProductCard),
-            ))
+            .widgetList<ProductCard>(
+              find.descendant(
+                of: find
+                    .byWidgetPredicate(
+                      (w) =>
+                          w is ListView && w.scrollDirection == Axis.horizontal,
+                    )
+                    .last,
+                matching: find.byType(ProductCard),
+              ),
+            )
             .map((card) => card.phone.name)
             .toList();
         expect(row, findsOneWidget);
@@ -136,7 +146,14 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: BrandRow(
-            brands: const ['Apple', 'SAMSUNG', 'OPPO', 'HONOR', 'vivo', 'Nokia'],
+            brands: const [
+              'Apple',
+              'SAMSUNG',
+              'OPPO',
+              'HONOR',
+              'vivo',
+              'Nokia',
+            ],
             onSelected: (_) {},
           ),
         ),
@@ -151,7 +168,14 @@ void main() {
   });
 
   test('each brand has its own colour, whatever the capitals', () {
-    final colours = ['Apple', 'SAMSUNG', 'OPPO', 'HONOR', 'Vivo', 'Nokia'].map(brandColor);
+    final colours = [
+      'Apple',
+      'SAMSUNG',
+      'OPPO',
+      'HONOR',
+      'Vivo',
+      'Nokia',
+    ].map(brandColor);
     expect(colours.toSet().length, 6);
     expect(brandColor('samsung'), brandColor('SAMSUNG'));
   });

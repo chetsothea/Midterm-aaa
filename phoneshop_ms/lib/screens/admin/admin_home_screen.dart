@@ -9,6 +9,9 @@ import 'admin_orders_tab.dart';
 import 'admin_products_tab.dart';
 import 'admin_live_screen.dart';
 import 'admin_payment_accounts_screen.dart';
+import 'admin_reports_screen.dart';
+import 'admin_staff_screen.dart';
+import 'admin_trade_ins_screen.dart';
 import 'admin_vouchers_screen.dart';
 import 'warranty_screens.dart';
 import '../../hooks/language.dart';
@@ -39,6 +42,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _ordersVersion = 0; // bumped to reload the Orders tab
 
   static const _titles = ['Dashboard', 'គ្រប់គ្រងទូរស័ព្ទ', 'គ្រប់គ្រង Order'];
+
+  // Staff only see the orders (and the tools that go with them)
+  final bool _isAdmin = ApiService.currentUser?.isAdmin ?? false;
 
   @override
   void initState() {
@@ -186,7 +192,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Admin • ${_titles[_tab]}',
+                _isAdmin ? 'Admin • ${_titles[_tab]}' : 'Staff • ${_titles[2]}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -209,16 +215,33 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             itemBuilder: (_) => [
               for (final (icon, label, page) in [
-                (
-                  Icons.account_balance_outlined,
-                  trf('គណនីបង់ប្រាក់ KHQR', 'KHQR bank accounts'),
-                  () => const AdminPaymentAccountsScreen(),
-                ),
-                (
-                  Icons.local_offer_outlined,
-                  trf('កូដបញ្ចុះ និងថ្លៃដឹក', 'Codes & delivery'),
-                  () => const AdminVouchersScreen(),
-                ),
+                if (_isAdmin) ...[
+                  (
+                    Icons.insights_outlined,
+                    trf('របាយការណ៍លក់ & Excel', 'Sales report & Excel'),
+                    () => const AdminReportsScreen(),
+                  ),
+                  (
+                    Icons.swap_horiz_rounded,
+                    trf('Trade-in (ទូរស័ព្ទចាស់)', 'Trade-ins'),
+                    () => const AdminTradeInsScreen(),
+                  ),
+                  (
+                    Icons.badge_outlined,
+                    trf('បុគ្គលិក', 'Staff'),
+                    () => const AdminStaffScreen(),
+                  ),
+                  (
+                    Icons.account_balance_outlined,
+                    trf('គណនីបង់ប្រាក់ KHQR', 'KHQR bank accounts'),
+                    () => const AdminPaymentAccountsScreen(),
+                  ),
+                  (
+                    Icons.local_offer_outlined,
+                    trf('កូដបញ្ចុះ និងថ្លៃដឹក', 'Codes & delivery'),
+                    () => const AdminVouchersScreen(),
+                  ),
+                ],
                 (
                   Icons.verified_user_outlined,
                   trf('ពិនិត្យការធានា (IMEI)', 'Warranty check (IMEI)'),
@@ -261,64 +284,75 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ],
       ),
       // Rebuilt on every tab switch so each tab shows fresh data
-      body: switch (_tab) {
+      body: switch (_isAdmin ? _tab : _ordersTab) {
         0 => const AdminDashboardTab(),
         1 => const AdminProductsTab(),
         _ => AdminOrdersTab(key: ValueKey(_ordersVersion)),
       },
       // White with rounded top corners like the other bottom bars; the picked tab
       // gets the store menu's gold highlight
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.glass,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppRadius.xl),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x1A000000),
-              blurRadius: 12,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: NavigationBar(
-          backgroundColor: AppColors.surface,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          height: 68,
-          indicatorColor: const Color(0xFF3D7BFF).withValues(alpha: 0.16),
-          selectedIndex: _tab,
-          onDestinationSelected: (i) =>
-              i == _ordersTab ? _openOrders() : setState(() => _tab = i),
-          destinations: [
-            const NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard, color: Color(0xFF3D7BFF)),
-              label: 'Dashboard',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.phone_android_outlined),
-              selectedIcon: Icon(Icons.phone_android, color: Color(0xFF3D7BFF)),
-              label: 'Products',
-            ),
-            NavigationDestination(
-              icon: Badge(
-                isLabelVisible: _unseen > 0,
-                label: Text('$_unseen'),
-                child: const Icon(Icons.receipt_long_outlined),
+      bottomNavigationBar: !_isAdmin
+          ? null
+          : Container(
+              decoration: BoxDecoration(
+                color: AppColors.glass,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x1A000000),
+                    blurRadius: 12,
+                    offset: Offset(0, -2),
+                  ),
+                ],
               ),
-              selectedIcon: Badge(
-                isLabelVisible: _unseen > 0,
-                label: Text('$_unseen'),
-                child: const Icon(Icons.receipt_long, color: Color(0xFF3D7BFF)),
+              clipBehavior: Clip.antiAlias,
+              child: NavigationBar(
+                backgroundColor: AppColors.surface,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                height: 68,
+                indicatorColor: const Color(0xFF3D7BFF).withValues(alpha: 0.16),
+                selectedIndex: _tab,
+                onDestinationSelected: (i) =>
+                    i == _ordersTab ? _openOrders() : setState(() => _tab = i),
+                destinations: [
+                  const NavigationDestination(
+                    icon: Icon(Icons.dashboard_outlined),
+                    selectedIcon: Icon(
+                      Icons.dashboard,
+                      color: Color(0xFF3D7BFF),
+                    ),
+                    label: 'Dashboard',
+                  ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.phone_android_outlined),
+                    selectedIcon: Icon(
+                      Icons.phone_android,
+                      color: Color(0xFF3D7BFF),
+                    ),
+                    label: 'Products',
+                  ),
+                  NavigationDestination(
+                    icon: Badge(
+                      isLabelVisible: _unseen > 0,
+                      label: Text('$_unseen'),
+                      child: const Icon(Icons.receipt_long_outlined),
+                    ),
+                    selectedIcon: Badge(
+                      isLabelVisible: _unseen > 0,
+                      label: Text('$_unseen'),
+                      child: const Icon(
+                        Icons.receipt_long,
+                        color: Color(0xFF3D7BFF),
+                      ),
+                    ),
+                    label: 'Orders',
+                  ),
+                ],
               ),
-              label: 'Orders',
             ),
-          ],
-        ),
-      ),
     );
   }
 }

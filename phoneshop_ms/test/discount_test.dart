@@ -29,33 +29,50 @@ void main() {
     expect(phone.discountPercent, closeTo(10, 0.001));
   });
 
-  testWidgets('the detail page shows the badge on the picture and the regular price', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: ProductDetailScreen(phone: discounted())));
-    await tester.pump();
-    expect(find.widgetWithText(DiscountBadge, '%10'), findsOneWidget);
-    expect(find.text('\$1000.00'), findsOneWidget);
-  });
+  testWidgets(
+    'the detail page shows the badge on the picture and the regular price',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: ProductDetailScreen(phone: discounted())),
+      );
+      await tester.pump();
+      expect(find.widgetWithText(DiscountBadge, '%10'), findsOneWidget);
+      expect(find.text('\$1000.00'), findsOneWidget);
+    },
+  );
 
-  testWidgets('the store card shows the badge over the picture', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Center(
-        child: SizedBox(
-          width: 200,
-          height: 340,
-          child: ProductCard(phone: discounted(), onTap: () {}, onAddToCart: () {}),
+  testWidgets('the store card shows the badge over the picture', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox(
+            width: 200,
+            height: 340,
+            child: ProductCard(
+              phone: discounted(),
+              onTap: () {},
+              onAddToCart: () {},
+            ),
+          ),
         ),
       ),
-    ));
+    );
     final badge = tester.getCenter(find.widgetWithText(DiscountBadge, '%10'));
     final name = tester.getCenter(find.text('iPhone'));
     expect(badge.dy, lessThan(name.dy));
   });
 
-  testWidgets('the admin form edits regular prices and the discount %', (tester) async {
+  testWidgets('the admin form edits regular prices and the discount %', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(500, 2000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await http.runWithClient(() async {
-      await tester.pumpWidget(MaterialApp(home: ProductFormScreen(phone: discounted())));
+      await tester.pumpWidget(
+        MaterialApp(home: ProductFormScreen(phone: discounted())),
+      );
       await tester.pumpAndSettle();
     }, () => MockClient((_) async => http.Response('[]', 200)));
 

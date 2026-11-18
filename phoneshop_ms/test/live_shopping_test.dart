@@ -39,50 +39,64 @@ void main() {
         ColoredBox(key: ValueKey('player-$id'), color: Colors.black);
   });
 
-  testWidgets('the live page plays the video, shows comments and pinned phones', (
+  testWidgets(
+    'the live page plays the video, shows comments and pinned phones',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 860));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final mock = MockClient((request) async {
+        if (request.url.path.endsWith('/live/comments')) {
+          return _json([
+            {
+              'id': 1,
+              'name': 'Dara',
+              'avatar_url': '',
+              'message': 'Price of 256GB?',
+            },
+            {
+              'id': 2,
+              'name': 'Sokha',
+              'avatar_url': '',
+              'message': 'Blue please',
+            },
+          ]);
+        }
+        return _json(_liveJson);
+      });
+
+      await http.runWithClient(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: LiveShoppingScreen(session: LiveSession.fromJson(_liveJson)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('player-dQw4w9WgXcQ')),
+          findsOneWidget,
+        );
+        expect(find.text('iPhone 17 launch'), findsOneWidget);
+        expect(find.text('LIVE'), findsOneWidget);
+        expect(find.text('Price of 256GB?'), findsOneWidget);
+        expect(find.text('Blue please'), findsOneWidget);
+        expect(find.text('iPhone 17 Pro'), findsOneWidget); // pinned
+        expect(tester.takeException(), isNull);
+
+        // Buy now opens the quick-buy sheet over the stream
+        await tester.tap(find.text('ទិញ'));
+        await tester.pumpAndSettle();
+        expect(find.byType(QuickBuySheet), findsOneWidget);
+        expect(find.text('Silver'), findsOneWidget); // colour choices
+        expect(find.text('Blue'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }, () => mock);
+    },
+  );
+
+  testWidgets('an ended live says so and still lists the phones', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(400, 860));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final mock = MockClient((request) async {
-      if (request.url.path.endsWith('/live/comments')) {
-        return _json([
-          {'id': 1, 'name': 'Dara', 'avatar_url': '', 'message': 'Price of 256GB?'},
-          {'id': 2, 'name': 'Sokha', 'avatar_url': '', 'message': 'Blue please'},
-        ]);
-      }
-      return _json(_liveJson);
-    });
-
-    await http.runWithClient(() async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: LiveShoppingScreen(
-            session: LiveSession.fromJson(_liveJson),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const ValueKey('player-dQw4w9WgXcQ')), findsOneWidget);
-      expect(find.text('iPhone 17 launch'), findsOneWidget);
-      expect(find.text('LIVE'), findsOneWidget);
-      expect(find.text('Price of 256GB?'), findsOneWidget);
-      expect(find.text('Blue please'), findsOneWidget);
-      expect(find.text('iPhone 17 Pro'), findsOneWidget); // pinned
-      expect(tester.takeException(), isNull);
-
-      // Buy now opens the quick-buy sheet over the stream
-      await tester.tap(find.text('ទិញ'));
-      await tester.pumpAndSettle();
-      expect(find.byType(QuickBuySheet), findsOneWidget);
-      expect(find.text('Silver'), findsOneWidget); // colour choices
-      expect(find.text('Blue'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    }, () => mock);
-  });
-
-  testWidgets('an ended live says so and still lists the phones', (tester) async {
     await http.runWithClient(() async {
       await tester.pumpWidget(
         MaterialApp(

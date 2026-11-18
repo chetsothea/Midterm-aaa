@@ -48,7 +48,11 @@ void main() {
     await pumpCard(tester, phone());
     expect(shown(tester), 'http://x/blue.png');
 
-    for (final url in ['http://x/red.png', 'http://x/black.png', 'http://x/blue.png']) {
+    for (final url in [
+      'http://x/red.png',
+      'http://x/black.png',
+      'http://x/blue.png',
+    ]) {
       await tester.pump(cardColorInterval);
       await tester.pump();
       expect(shown(tester), url);
@@ -57,7 +61,10 @@ void main() {
   });
 
   testWidgets('a phone with one picture stays on it', (tester) async {
-    await pumpCard(tester, phone(color: 'Blue', pictures: const {'Blue': 'http://x/blue.png'}));
+    await pumpCard(
+      tester,
+      phone(color: 'Blue', pictures: const {'Blue': 'http://x/blue.png'}),
+    );
     await tester.pump(cardColorInterval * 3);
     await tester.pump(const Duration(seconds: 1));
     expect(shown(tester), 'http://x/blue.png');
@@ -69,7 +76,10 @@ void main() {
       tester,
       phone(
         color: 'Blue, Navy',
-        pictures: const {'Blue': 'http://x/blue.png', 'Navy': 'http://x/blue.png'},
+        pictures: const {
+          'Blue': 'http://x/blue.png',
+          'Navy': 'http://x/blue.png',
+        },
       ),
     );
     await tester.pump(cardColorInterval);

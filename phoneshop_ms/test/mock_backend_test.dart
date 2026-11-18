@@ -23,26 +23,29 @@ void main() {
     expect(pro.imageFor('Deep Blue'), startsWith('asset:assets/data/phones/'));
   });
 
-  test('search, brand filter, menu and best sellers answer like the API', () async {
-    final found = await MockBackend.get('/products?search=galaxy') as List;
-    expect(found.map((p) => p['name']), everyElement(contains('Galaxy')));
+  test(
+    'search, brand filter, menu and best sellers answer like the API',
+    () async {
+      final found = await MockBackend.get('/products?search=galaxy') as List;
+      expect(found.map((p) => p['name']), everyElement(contains('Galaxy')));
 
-    final apple = await MockBackend.get('/products?brand=Apple') as List;
-    expect(apple.map((p) => p['brand']).toSet(), {'Apple'});
+      final apple = await MockBackend.get('/products?brand=Apple') as List;
+      expect(apple.map((p) => p['brand']).toSet(), {'Apple'});
 
-    final menu = await MockBackend.get('/menu') as Map;
-    expect(menu['brands'], containsAll(['Apple', 'Samsung', 'Google']));
-    expect(
-      (menu['categories'] as List).map((c) => c['name']),
-      containsAll(['Smartphone', '2nd Hand']),
-    );
+      final menu = await MockBackend.get('/menu') as Map;
+      expect(menu['brands'], containsAll(['Apple', 'Samsung', 'Google']));
+      expect(
+        (menu['categories'] as List).map((c) => c['name']),
+        containsAll(['Smartphone', '2nd Hand']),
+      );
 
-    final best = await MockBackend.get('/best-sellers') as List;
-    expect(best, hasLength(6));
-    expect(best.every((p) => (p['stock'] as int) > 0), isTrue);
+      final best = await MockBackend.get('/best-sellers') as List;
+      expect(best, hasLength(6));
+      expect(best.every((p) => (p['stock'] as int) > 0), isTrue);
 
-    expect(await MockBackend.get('/admin/dashboard'), isNull);
-    expect(MockBackend.login('user@phoneshop.com', 'user123'), isNotNull);
-    expect(MockBackend.login('user@phoneshop.com', 'wrong'), isNull);
-  });
+      expect(await MockBackend.get('/admin/dashboard'), isNull);
+      expect(MockBackend.login('user@phoneshop.com', 'user123'), isNotNull);
+      expect(MockBackend.login('user@phoneshop.com', 'wrong'), isNull);
+    },
+  );
 }

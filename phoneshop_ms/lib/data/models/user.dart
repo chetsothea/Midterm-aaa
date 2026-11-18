@@ -18,6 +18,10 @@ class User {
   });
 
   bool get isAdmin => role == 'admin';
+  // Shop worker: handles orders, but not money, prices or settings
+  bool get isStaff => role == 'staff';
+  // Opens the admin panel (staff see only the orders part)
+  bool get isTeam => isAdmin || isStaff;
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(

@@ -51,7 +51,6 @@ void main() {
         stock: 5,
         imageUrl: '',
       ),
-
     );
   });
 
@@ -193,9 +192,7 @@ void main() {
     });
 
     await http.runWithClient(() async {
-      await tester.pumpWidget(
-        const MaterialApp(home: AdminVouchersScreen()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: AdminVouchersScreen()));
       await tester.pumpAndSettle();
       expect(find.text('NEWYEAR10'), findsOneWidget);
       expect(find.textContaining('ប្រើ 3/50'), findsOneWidget);

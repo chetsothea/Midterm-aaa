@@ -62,6 +62,33 @@ class Order extends Model
                 $order->delivered_at = now();
             }
         });
+        // The customer hears about every step in the app's 🔔
+        static::updated(function (Order $order) {
+            $order->noticeCustomer();
+        });
+    }
+
+    public const STATUS_NOTICES = [
+        'confirmed' => 'ហាងបានបញ្ជាក់ Order របស់អ្នក ហើយកំពុងរៀបចំឥវ៉ាន់',
+        'shipping' => 'ឥវ៉ាន់របស់អ្នកកំពុងដឹកជញ្ជូនមក',
+        'delivered' => 'ឥវ៉ាន់បានដល់ហើយ សូមអរគុណដែលបានទិញ!',
+        'cancelled' => 'Order របស់អ្នកត្រូវបានបោះបង់',
+    ];
+
+    private function noticeCustomer(): void
+    {
+        $ref = $this->code ?: '#'.$this->id;
+        $links = ['order_id' => $this->id];
+        if ($this->wasChanged('payment_status') && $this->payment_status === 'paid') {
+            Notice::tell($this->user_id, 'payment', "បានទទួលប្រាក់ · Order {$ref}", 'ហាងបានទទួលការបង់ប្រាក់របស់អ្នក '.'$'.number_format($this->total, 2), $links);
+        }
+        if ($this->wasChanged('status') && isset(self::STATUS_NOTICES[$this->status])) {
+            $body = self::STATUS_NOTICES[$this->status];
+            if ($this->status === 'shipping' && $this->courier) {
+                $body .= " ({$this->courier}".($this->tracking_number ? " · {$this->tracking_number}" : '').')';
+            }
+            Notice::tell($this->user_id, 'order', "Order {$ref}", $body, $links);
+        }
     }
 
     // Only sent once, in the guest checkout response

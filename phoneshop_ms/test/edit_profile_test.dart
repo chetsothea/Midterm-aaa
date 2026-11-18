@@ -55,7 +55,10 @@ void main() {
 
     await http.runWithClient(() async {
       await openEdit(tester);
-      await tester.enterText(find.widgetWithText(TextFormField, 'ឈ្មោះ *'), 'Thea Sok');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'ឈ្មោះ *'),
+        'Thea Sok',
+      );
       await tester.enterText(
         find.widgetWithText(TextFormField, 'លេខទូរស័ព្ទ *'),
         '012345678',
@@ -98,9 +101,18 @@ void main() {
 
     await http.runWithClient(() async {
       await openEdit(tester);
-      await tester.enterText(find.widgetWithText(TextFormField, 'Email *'), 'new@gmail.com');
-      await tester.enterText(find.widgetWithText(TextFormField, 'ពាក្យសម្ងាត់ថ្មី'), 'abcdef');
-      await tester.enterText(find.widgetWithText(TextFormField, 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី'), 'abcdef');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email *'),
+        'new@gmail.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'ពាក្យសម្ងាត់ថ្មី'),
+        'abcdef',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី'),
+        'abcdef',
+      );
       await tester.tap(find.text('រក្សាទុក'));
       await tester.pumpAndSettle();
     }, () => mock);
@@ -115,10 +127,22 @@ void main() {
     await openEdit(tester);
 
     await tester.enterText(find.widgetWithText(TextFormField, 'ឈ្មោះ *'), ' ');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Email *'), 'nope');
-    await tester.enterText(find.widgetWithText(TextFormField, 'លេខទូរស័ព្ទ *'), '12');
-    await tester.enterText(find.widgetWithText(TextFormField, 'ពាក្យសម្ងាត់ថ្មី'), 'abcdef');
-    await tester.enterText(find.widgetWithText(TextFormField, 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី'), 'abcxyz');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email *'),
+      'nope',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'លេខទូរស័ព្ទ *'),
+      '12',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'ពាក្យសម្ងាត់ថ្មី'),
+      'abcdef',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី'),
+      'abcxyz',
+    );
     await tester.ensureVisible(find.text('រក្សាទុក'));
     await tester.tap(find.text('រក្សាទុក'));
     await tester.pump();

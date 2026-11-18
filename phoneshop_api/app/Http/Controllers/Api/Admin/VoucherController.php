@@ -14,7 +14,8 @@ class VoucherController extends Controller
     public function index()
     {
         return [
-            'vouchers' => Voucher::latest()->get()->map(fn (Voucher $v) => $this->present($v)),
+            // Trade-in credits are managed from the trade-in page
+            'vouchers' => Voucher::whereNull('user_id')->latest()->get()->map(fn (Voucher $v) => $this->present($v)),
             'shipping' => Shipping::rates(),
         ];
     }

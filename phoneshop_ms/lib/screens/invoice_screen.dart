@@ -2,7 +2,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import '../data/save_file.dart';
 import '../data/models/order.dart';
 import '../components/common.dart';
 import '../hooks/language.dart';
@@ -17,6 +19,20 @@ Color get _muted => AppColors.muted;
 String invoiceNumber(Order order) => order.code.isNotEmpty
     ? 'INV-${order.code.replaceFirst('PS-', '')}'
     : 'INV-${order.id.toString().padLeft(6, '0')}';
+
+// One A4 page holding the invoice picture, centred with a margin
+Future<Uint8List> invoicePdf(Uint8List png) async {
+  final doc = pw.Document(title: 'PS168 invoice', creator: 'PS168');
+  final picture = pw.MemoryImage(png);
+  doc.addPage(
+    pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(28),
+      build: (_) => pw.Center(child: pw.Image(picture, fit: pw.BoxFit.contain)),
+    ),
+  );
+  return doc.save();
+}
 
 // The bill for one order. It can be saved as a picture, so it reads the same anywhere.
 class InvoiceScreen extends StatefulWidget {
@@ -34,38 +50,37 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
   Order get _order => widget.order;
 
-  // On the web it downloads; on a phone it opens the share sheet (Telegram, Photos, ...)
-  void _save() async {
-    setState(() {
-      _isSaving = true;
-    });
+  // The bill as a sharp picture, drawn by Flutter so Khmer reads right
+  Future<Uint8List> _png() async {
+    final boundary =
+        _paper.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 3);
+    final png = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    return png!.buffer.asUint8List();
+  }
+
+  // On the web it downloads; on a phone it opens the share sheet (Telegram,
+  // Files, a printer app ...). PDF puts the same picture on an A4 page, so it
+  // prints at the right size and Khmer stays correct.
+  Future<void> _save({required bool pdf}) async {
+    setState(() => _isSaving = true);
     try {
-      final boundary =
-          _paper.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3);
-      final png = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      final name = '${invoiceNumber(_order)}.png';
-      final file = XFile.fromData(
-        png!.buffer.asUint8List(),
-        name: name,
-        mimeType: 'image/png',
-      );
-      if (kIsWeb) {
-        await file.saveTo(name);
-      } else {
-        await SharePlus.instance.share(
-          ShareParams(files: [file], fileNameOverrides: [name]),
+      final png = await _png();
+      final base = invoiceNumber(_order);
+      if (pdf) {
+        await saveOrShareFile(
+          await invoicePdf(png),
+          '$base.pdf',
+          'application/pdf',
         );
+      } else {
+        await saveOrShareFile(png, '$base.png', 'image/png');
       }
     } catch (e) {
       if (mounted) showMessage(context, e.toString(), error: true);
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -594,15 +609,31 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
-          child: FilledButton.icon(
-            onPressed: _isSaving ? null : _save,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-            ),
-            icon: Icon(kIsWeb ? Icons.download : Icons.share),
-            label: Text(
-              kIsWeb ? tr('ទាញយកវិក្កយបត្រ') : tr('រក្សាទុក / ផ្ញើវិក្កយបត្រ'),
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isSaving ? null : () => _save(pdf: false),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  icon: const Icon(Icons.image_outlined),
+                  label: Text(trf('រូបភាព', 'Picture')),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                flex: 2,
+                child: FilledButton.icon(
+                  onPressed: _isSaving ? null : () => _save(pdf: true),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: Text(trf('PDF / បោះពុម្ព', 'PDF / Print')),
+                ),
+              ),
+            ],
           ),
         ),
       ),

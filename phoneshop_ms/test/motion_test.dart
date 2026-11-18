@@ -5,7 +5,9 @@ import 'package:phoneshop_ms/components/motion.dart';
 void main() {
   testWidgets('the shine sweeps once, then the screen settles', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Center(child: Shine(child: Text('PS168')))),
+      const MaterialApp(
+        home: Center(child: Shine(child: Text('PS168'))),
+      ),
     );
 
     await tester.pump(); // the animation clock starts on this frame

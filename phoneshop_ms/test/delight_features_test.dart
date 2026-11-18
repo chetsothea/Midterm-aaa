@@ -42,10 +42,11 @@ void main() {
 
     await tester.tap(find.text('មិនធ្វើវិញ'));
     await tester.pumpAndSettle();
-    expect(
-      Cart.instance.items.map((i) => i.phone.name),
-      ['First', 'Second', 'Third'],
-    );
+    expect(Cart.instance.items.map((i) => i.phone.name), [
+      'First',
+      'Second',
+      'Third',
+    ]);
     expect(find.text('បានដក Second'), findsNothing);
   });
 

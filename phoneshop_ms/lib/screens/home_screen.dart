@@ -1,3 +1,5 @@
+import '../hooks/notices.dart';
+import 'notices_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -67,8 +69,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _refreshTimer = Live.poll(() => context, _refreshQuietly);
   }
 
+  bool get _customer =>
+      ApiService.isLoggedIn && !(ApiService.currentUser?.isTeam ?? false);
+
   @override
   void dispose() {
+    Notices.instance.stop();
     _searchField.dispose();
     _scroll.dispose();
     _refreshTimer?.cancel();
@@ -257,6 +263,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ApiService.currentUser;
+    // The 🔔 badge is checked every minute, only while a customer is logged in
+    if (_customer) {
+      Notices.instance.watch();
+    } else {
+      Notices.instance.stop();
+    }
     return Scaffold(
       backgroundColor: AppColors.page,
       // The page runs on under the floating bottom menu, so its glass has something to blur
@@ -329,8 +341,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
         actions: [
-          // ☀️ / 🌙: dark or light mode, first, so 🔍 ♥ 🌐 stay side by side
-          if (!_searching) const ThemeToggleButton(),
+          // Logged-in customers get the 🔔 here; ☀️ / 🌙 then lives in the
+          // side menu (☰) so the bar still fits a phone. 🔍 ♥ 🌐 stay together.
+          if (!_searching && _customer) const NoticesButton(),
+          if (!_searching && !_customer) const ThemeToggleButton(),
           IconButton(
             tooltip: _searching ? 'Close search' : 'Search',
             icon: Icon(_searching ? Icons.close : Icons.search),

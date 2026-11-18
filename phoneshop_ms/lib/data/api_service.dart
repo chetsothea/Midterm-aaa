@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'models/notice.dart';
+import 'models/trade_in.dart';
 import 'models/voucher.dart';
 import 'models/customer.dart';
 import 'models/live.dart';
@@ -698,6 +700,159 @@ class ApiService {
       Uri.parse('$baseUrl/admin/payment-accounts/$id'),
       headers: _headers,
     ),
+  );
+
+  // ---------- Forgot password (code by e-mail) ----------
+
+  // Same answer whether or not the e-mail has an account
+  static Future<String> requestPasswordCode(String email) async {
+    final Map data = await _post('/password/code', {'email': email});
+    return '${data['message']}';
+  }
+
+  static Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async => _post('/password/reset', {
+    'email': email,
+    'code': code,
+    'password': password,
+    'password_confirmation': password,
+  });
+
+  // ---------- 🔔 In-app notices ----------
+
+  static Future<(int, List<Notice>)> fetchNotices() async {
+    final Map data = await _get('/notices');
+    return (
+      (data['unread'] as num).toInt(),
+      [
+        for (final n in data['notices'] as List)
+          Notice.fromJson(Map<String, dynamic>.from(n)),
+      ],
+    );
+  }
+
+  static Future<void> markNoticesRead() async => _post('/notices/read');
+
+  // ---------- Trade-in ----------
+
+  static Future<List<TradeIn>> fetchMyTradeIns() async => [
+    for (final t in await _get('/trade-ins') as List)
+      TradeIn.fromJson(Map<String, dynamic>.from(t)),
+  ];
+
+  static Future<TradeIn> sendTradeIn(
+    Map<String, String> fields,
+    List<XFile> photos,
+  ) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/trade-ins'),
+    );
+    request.headers.addAll({
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+    request.fields.addAll(fields);
+    for (final photo in photos) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photos[]',
+          await photo.readAsBytes(),
+          filename: photo.name,
+        ),
+      );
+    }
+    final response = await http.Response.fromStream(await request.send());
+    return TradeIn.fromJson(Map<String, dynamic>.from(_handle(response)));
+  }
+
+  // accept, decline or cancel
+  static Future<TradeIn> moveTradeIn(int id, String action) async =>
+      TradeIn.fromJson(
+        Map<String, dynamic>.from(await _post('/trade-ins/$id/$action')),
+      );
+
+  static Future<List<TradeIn>> fetchAllTradeIns([String status = '']) async => [
+    for (final t
+        in await _get(
+              '/admin/trade-ins${status.isEmpty ? '' : '?status=$status'}',
+            )
+            as List)
+      TradeIn.fromJson(Map<String, dynamic>.from(t)),
+  ];
+
+  static Future<TradeIn> offerTradeIn(
+    int id,
+    double amount,
+    String note,
+  ) async => TradeIn.fromJson(
+    Map<String, dynamic>.from(
+      await _put('/admin/trade-ins/$id/offer', {
+        'offer_amount': amount,
+        if (note.isNotEmpty) 'admin_note': note,
+      }),
+    ),
+  );
+
+  static Future<TradeIn> rejectTradeIn(int id, String note) async =>
+      TradeIn.fromJson(
+        Map<String, dynamic>.from(
+          await _post('/admin/trade-ins/$id/reject', {
+            if (note.isNotEmpty) 'admin_note': note,
+          }),
+        ),
+      );
+
+  static Future<TradeIn> completeTradeIn(int id) async => TradeIn.fromJson(
+    Map<String, dynamic>.from(await _post('/admin/trade-ins/$id/complete')),
+  );
+
+  // ---------- Sales reports and staff (admin) ----------
+
+  static String _day(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  static Future<Map<String, dynamic>> fetchSalesReport(
+    DateTime from,
+    DateTime to,
+  ) async => Map<String, dynamic>.from(
+    await _get('/admin/reports/sales?from=${_day(from)}&to=${_day(to)}'),
+  );
+
+  // The same days as a CSV file for Excel: (file name, bytes)
+  static Future<(String, Uint8List)> downloadSalesCsv(
+    DateTime from,
+    DateTime to,
+  ) async {
+    final response = await http.get(
+      Uri.parse(
+        '$baseUrl/admin/reports/sales.csv?from=${_day(from)}&to=${_day(to)}',
+      ),
+      headers: {..._headers, 'Accept': 'text/csv'},
+    );
+    if (response.statusCode != 200) _handle(response);
+    return ('ps168-sales-${_day(from)}-to-${_day(to)}.csv', response.bodyBytes);
+  }
+
+  static Future<List<Map<String, dynamic>>> fetchStaff() async => [
+    for (final s in await _get('/admin/staff') as List)
+      Map<String, dynamic>.from(s),
+  ];
+
+  // Create when id is null; otherwise new name/phone, and password if given
+  static Future<void> saveStaff(Map<String, dynamic> fields, {int? id}) async {
+    if (id == null) {
+      await _post('/admin/staff', fields);
+    } else {
+      await _put('/admin/staff/$id', fields);
+    }
+  }
+
+  static Future<void> deleteStaff(int id) async => _handle(
+    await http.delete(Uri.parse('$baseUrl/admin/staff/$id'), headers: _headers),
   );
 
   // ---------- IMEI and warranty (admin) ----------

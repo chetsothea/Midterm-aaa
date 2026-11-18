@@ -44,50 +44,53 @@ void main() {
     headers: {'content-type': 'application/json; charset=utf-8'},
   );
 
-  testWidgets('the warning opens only the orders still to collect, and marking one paid clears it', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(360, 1400));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    addTearDown(() => ApiService.token = null);
+  testWidgets(
+    'the warning opens only the orders still to collect, and marking one paid clears it',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      addTearDown(() => ApiService.token = null);
 
-    final orders = [order(18, 'unpaid'), order(14, 'paid')];
-    final mock = MockClient((request) async {
-      if (request.url.path.endsWith('/dashboard')) {
-        final unpaid = orders.where((o) => o['payment_status'] == 'unpaid').length;
-        return json(stats(unpaid, unpaid * 310));
-      }
-      if (request.method == 'PUT') {
-        orders[0] = order(18, 'paid');
-        return json(orders[0]);
-      }
-      return json(orders);
-    });
+      final orders = [order(18, 'unpaid'), order(14, 'paid')];
+      final mock = MockClient((request) async {
+        if (request.url.path.endsWith('/dashboard')) {
+          final unpaid = orders
+              .where((o) => o['payment_status'] == 'unpaid')
+              .length;
+          return json(stats(unpaid, unpaid * 310));
+        }
+        if (request.method == 'PUT') {
+          orders[0] = order(18, 'paid');
+          return json(orders[0]);
+        }
+        return json(orders);
+      });
 
-    await http.runWithClient(() async {
-      ApiService.token = 'test';
-      await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AdminDashboardTab())),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('1 Order • \$310.00'), findsOneWidget);
+      await http.runWithClient(() async {
+        ApiService.token = 'test';
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: AdminDashboardTab())),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('1 Order • \$310.00'), findsOneWidget);
 
-      await tester.tap(find.text('បានទទួលហើយ តែមិនទាន់បង់'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('#18'), findsOneWidget);
-      expect(find.textContaining('#14'), findsNothing); // already paid
+        await tester.tap(find.text('បានទទួលហើយ តែមិនទាន់បង់'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('#18'), findsOneWidget);
+        expect(find.textContaining('#14'), findsNothing); // already paid
 
-      await tester.tap(find.textContaining('#18'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('បានទទួលសាច់ប្រាក់'));
-      await tester.pumpAndSettle();
-      expect(find.text('មិនមាន Order'), findsOneWidget);
+        await tester.tap(find.textContaining('#18'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('បានទទួលសាច់ប្រាក់'));
+        await tester.pumpAndSettle();
+        expect(find.text('មិនមាន Order'), findsOneWidget);
 
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      expect(find.text('បានទទួលហើយ តែមិនទាន់បង់'), findsNothing);
-    }, () => mock);
-  });
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(find.text('បានទទួលហើយ តែមិនទាន់បង់'), findsNothing);
+      }, () => mock);
+    },
+  );
 
   testWidgets('nothing to collect: no warning', (tester) async {
     addTearDown(() => ApiService.token = null);
