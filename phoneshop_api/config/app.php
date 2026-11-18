@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Proxies in front of the app (nginx, Cloudflare): '*' or comma-separated IPs
+    'trusted_proxies' => env('TRUSTED_PROXIES', '127.0.0.1'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

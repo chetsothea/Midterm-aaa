@@ -80,3 +80,6 @@ Schedule::command('orders:check-bakong')->everyMinute()->withoutOverlapping();
 
 // Clear logins older than their 30 days out of the database once a day
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+
+// Every night at 2:00 (Cambodia): database + pictures, the last 14 days kept
+Schedule::command('shop:backup')->dailyAt('02:00')->timezone('Asia/Phnom_Penh')->withoutOverlapping();

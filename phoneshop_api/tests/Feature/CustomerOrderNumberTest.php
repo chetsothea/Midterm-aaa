@@ -44,13 +44,14 @@ class CustomerOrderNumberTest extends TestCase
         $yaya = $this->customer('Yaya');
         $dara = $this->customer('Dara');
 
-        $this->buy($yaya)->assertJsonPath('customer_number', 1);
+        $first = $this->buy($yaya)->assertJsonPath('customer_number', 1);
         $this->buy($dara)->assertJsonPath('customer_number', 1);
         $this->buy($dara)->assertJsonPath('customer_number', 2);
         $third = $this->buy($yaya)->assertJsonPath('customer_number', 2);
 
-        // The shop-wide ID still counts everyone's orders
-        $this->assertSame(4, $third->json('id'));
+        // The shop-wide ID still counts everyone's orders (relative to the first:
+        // MySQL doesn't rewind ID numbers when a test's data is rolled back)
+        $this->assertSame($first->json('id') + 3, $third->json('id'));
     }
 
     public function test_a_deleted_order_does_not_reuse_a_number(): void

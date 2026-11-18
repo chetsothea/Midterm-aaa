@@ -4,4 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Plain http to the shop server on the Wi-Fi while testing. Release
+         builds don't get this: they must talk to the live server over https. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>
