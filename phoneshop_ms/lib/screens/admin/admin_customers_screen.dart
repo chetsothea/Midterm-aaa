@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../models/customer.dart';
-import '../../services/api_service.dart';
-import '../../widgets/common.dart';
+import '../../data/models/customer.dart';
+import '../../data/api_service.dart';
+import '../../components/common.dart';
 import 'customer_form_screen.dart';
+import '../../components/ux.dart';
+import '../../components/shop_refresh.dart';
+import '../../hooks/language.dart';
+import '../../theme/app_theme.dart';
 
 // Everyone who has registered: opened from the "អតិថិជន" tile on the dashboard
 class AdminCustomersScreen extends StatefulWidget {
@@ -28,15 +32,15 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   String _search = '';
   String _filter = 'all';
 
-  static const _navy = Color(0xFF0F2A5F);
+  static Color get _navy => AppColors.text;
 
   // A steady colour per customer for their initial, so the list isn't all one colour
   static const _avatarColors = [
     Color(0xFF2563EB),
-    Color(0xFF0E7490),
+    Color(0xFF3D7BFF),
     Color(0xFF7C3AED),
-    Color(0xFFEA580C),
-    Color(0xFF16A34A),
+    Color(0xFF2F62D9),
+    Color(0xFF30D158),
     Color(0xFFDB2777),
   ];
 
@@ -45,8 +49,8 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF0E7490)),
-        const SizedBox(width: 8),
+        Icon(icon, size: 16, color: const Color(0xFF3D7BFF)),
+        const SizedBox(width: AppSpacing.xs),
         Expanded(
           child: SelectableText(text, style: const TextStyle(fontSize: 13)),
         ),
@@ -59,8 +63,8 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -77,7 +81,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -97,7 +101,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +110,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                         customer.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
                           color: _navy,
@@ -114,40 +118,37 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                       ),
                       Text(
                         'ចុះឈ្មោះ ${_date(customer.joined)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black45,
-                        ),
+                        style: TextStyle(fontSize: 12, color: AppColors.muted),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.xs),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 4,
+                    vertical: AppSpacing.xxs,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF97316).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF3D7BFF).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     '${customer.orders} Order',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFFEA580C),
+                      color: Color(0xFF2F62D9),
                     ),
                   ),
                 ),
               ],
             ),
             if (customer.blocked) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               const StatusBadge(status: 'cancelled', label: 'គណនីបានបិទ'),
             ],
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xxs),
             _detail(Icons.mail_outline, customer.email),
             if (customer.phone.isNotEmpty)
               _detail(Icons.phone_outlined, customer.phone),
@@ -168,7 +169,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                 customer.blocked
                     ? OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF16A34A),
+                          foregroundColor: const Color(0xFF30D158),
                         ),
                         onPressed: () => _setBlocked(customer, false),
                         icon: const Icon(Icons.lock_open, size: 18),
@@ -176,7 +177,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                       )
                     : OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFEA580C),
+                          foregroundColor: const Color(0xFF2F62D9),
                         ),
                         onPressed: () => _setBlocked(customer, true),
                         icon: const Icon(Icons.block, size: 18),
@@ -217,12 +218,12 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
         visualDensity: VisualDensity.compact,
         selected: selected,
         selectedColor: color,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         side: BorderSide(color: selected ? color : Colors.black12),
         label: Text(
           '$label  $count',
           style: TextStyle(
-            color: selected ? Colors.white : Colors.black87,
+            color: selected ? Colors.white : AppColors.text2,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
@@ -236,7 +237,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   Widget _toolbar(List<Customer> all) {
     final blocked = all.where((c) => c.blocked).length;
     return Container(
-      color: Colors.white,
+      color: AppColors.glass,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Column(
         children: [
@@ -247,14 +248,14 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
               hintText: 'ស្វែងរក ឈ្មោះ Email ឬលេខទូរស័ព្ទ',
               prefixIcon: const Icon(Icons.search),
               filled: true,
-              fillColor: const Color(0xFFF1F5F9),
+              fillColor: AppColors.page,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
                 borderSide: BorderSide.none,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           SizedBox(
             height: 36,
             child: ListView(
@@ -265,7 +266,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                   'active',
                   'សកម្ម',
                   all.length - blocked,
-                  const Color(0xFF16A34A),
+                  const Color(0xFF30D158),
                 ),
                 _chip('blocked', 'បានបិទ', blocked, Colors.red),
               ],
@@ -367,26 +368,33 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: AppBar(title: const Text('អតិថិជន')),
       body: FutureBuilder<List<Customer>>(
         future: _customers,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton();
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return StatusView(
+              icon: Icons.wifi_off_rounded,
+              error: true,
+              title: trf('មិនអាចភ្ជាប់ទៅហាងបានទេ', "Can't reach the shop"),
+              message: '${snapshot.error}',
+              actionLabel: trf('ព្យាយាមម្តងទៀត', 'Try again'),
+              onAction: _refresh,
+            );
           }
           final customers = snapshot.data!;
           if (customers.isEmpty) {
-            return RefreshIndicator(
+            return ShopRefresh(
               onRefresh: _refresh,
               // A ListView, so an empty list can still be pulled to refresh
               child: ListView(
                 children: const [
                   SizedBox(height: 120),
                   Icon(Icons.people_outline, size: 56, color: Colors.black26),
-                  SizedBox(height: 8),
+                  SizedBox(height: AppSpacing.xs),
                   Center(child: Text('មិនទាន់មានអតិថិជនចុះឈ្មោះទេ')),
                 ],
               ),
@@ -397,7 +405,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
             children: [
               _toolbar(customers),
               Expanded(
-                child: RefreshIndicator(
+                child: ShopRefresh(
                   onRefresh: _refresh,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
@@ -406,9 +414,9 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                         padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
                         child: Text(
                           'សរុប ${customers.length} នាក់',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: Colors.black54,
+                            color: AppColors.muted,
                           ),
                         ),
                       ),

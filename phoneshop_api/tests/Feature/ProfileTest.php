@@ -109,7 +109,7 @@ class ProfileTest extends TestCase
     {
         $url = $this->save(['avatar' => $this->picture()])->assertOk()->json('avatar_url');
         $first = $this->customer->fresh()->avatar;
-        $this->assertStringEndsWith('/uploads/'.$first, $url);
+        $this->assertStringEndsWith('/media/'.$first, $url);
         $this->assertFileExists(public_path('uploads/'.$first));
 
         $this->customer->refresh();

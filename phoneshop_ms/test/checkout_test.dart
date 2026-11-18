@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:phoneshop_ms/models/phone.dart';
-import 'package:phoneshop_ms/models/user.dart';
+import 'package:phoneshop_ms/data/models/phone.dart';
+import 'package:phoneshop_ms/data/models/user.dart';
 import 'package:phoneshop_ms/screens/checkout_screen.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
-import 'package:phoneshop_ms/services/cart.dart';
-import 'package:phoneshop_ms/widgets/address_picker.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
+import 'package:phoneshop_ms/hooks/cart.dart';
+import 'package:phoneshop_ms/components/address_picker.dart';
 
 const savedAddress =
     'ភូមិត្រស់, ឃុំអូរតាគី, ស្រុកថ្មគោល, ខេត្តបាត់ដំបង, កម្ពុជា';

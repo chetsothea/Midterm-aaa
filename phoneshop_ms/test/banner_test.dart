@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/main.dart';
-import 'package:phoneshop_ms/widgets/banner_carousel.dart' hide MyApp;
+import 'package:phoneshop_ms/components/banner_carousel.dart';
 
 const banners = [
   'assets/images/banner_1.jpg',
@@ -114,6 +114,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BannerCarousel), findsOneWidget);
+      // The 3D hero card sits on top now, so scroll the products title into
+      // view (the banner stays built just above it)
+      await tester.scrollUntilVisible(
+        find.text('ទូរស័ព្ទពេញនិយម'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(
         tester.getTopLeft(find.byType(BannerCarousel)).dy,
         lessThan(tester.getTopLeft(find.text('ទូរស័ព្ទពេញនិយម')).dy),
@@ -122,7 +129,13 @@ void main() {
       // Choosing a category hides it
       await tester.tap(find.byTooltip('Menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Smartphone'));
+      // (the side menu's item; the category tiles on the page say it too)
+      await tester.tap(
+        find.descendant(
+          of: find.byType(Drawer),
+          matching: find.text('Smartphone'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(BannerCarousel), findsNothing);
 
@@ -141,9 +154,7 @@ void main() {
       final isProducts = request.url.path.endsWith('/products');
       if (isProducts) searches.add(request.url.queryParameters['search']);
       return http.Response(
-        jsonEncode(
-          isProducts ? [] : {'brands': [], 'categories': []},
-        ),
+        jsonEncode(isProducts ? [] : {'brands': [], 'categories': []}),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
       );

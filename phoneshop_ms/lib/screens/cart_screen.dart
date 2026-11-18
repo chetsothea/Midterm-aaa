@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
-import '../services/cart.dart';
-import '../widgets/common.dart';
-import '../widgets/store_app_bar.dart';
+import '../hooks/cart.dart';
+import '../components/common.dart';
+import '../components/store_app_bar.dart';
 import 'checkout_screen.dart';
 import 'login_screen.dart';
-import '../services/language.dart';
+import '../components/ux.dart';
+import '../components/cart_undo_bar.dart';
+import '../components/motion.dart';
+import '../hooks/language.dart';
+import '../theme/app_theme.dart';
 
-const _navy = Color(0xFF0F2A5F);
-const _muted = Color(0xFF64748B);
-const _discountRed = Color(0xFFE11D48);
-const _orange = Color(0xFFF97316);
+Color get _navy => AppColors.text;
+Color get _muted => AppColors.muted;
+const _discountRed = Color(0xFFFF453A);
+const _orange = Color(0xFF3D7BFF);
 
 // White card with a soft shadow, the same as the other pages
-final _cardDecoration = BoxDecoration(
-  color: Colors.white,
-  borderRadius: BorderRadius.circular(16),
+BoxDecoration get _cardDecoration => BoxDecoration(
+  color: AppColors.glass,
+  borderRadius: BorderRadius.circular(AppRadius.lg),
   boxShadow: const [
     BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 2)),
   ],
@@ -40,7 +44,7 @@ class CartScreen extends StatelessWidget {
         style: filled
             ? IconButton.styleFrom(
                 backgroundColor: _navy,
-                disabledBackgroundColor: const Color(0xFFCBD5E1),
+                disabledBackgroundColor: AppColors.outline,
               )
             : null,
         icon: Icon(icon),
@@ -62,7 +66,7 @@ class CartScreen extends StatelessWidget {
         alignment: Alignment.centerRight,
         decoration: BoxDecoration(
           color: _discountRed,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: const Icon(Icons.delete_outline, color: Colors.white, size: 26),
       ),
@@ -83,15 +87,15 @@ class CartScreen extends StatelessWidget {
               height: 96,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+                  colors: [AppColors.surfaceHigh, AppColors.tileLow],
                 ),
                 border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x1F1D4ED8),
+                    color: AppColors.shadow,
                     blurRadius: 8,
                     offset: Offset(0, 3),
                   ),
@@ -141,7 +145,7 @@ class CartScreen extends StatelessWidget {
                           item.phone.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             color: _navy,
                           ),
@@ -163,7 +167,7 @@ class CartScreen extends StatelessWidget {
                   if (item.phone.brand.isNotEmpty)
                     Text(
                       item.phone.brand,
-                      style: const TextStyle(fontSize: 12, color: _muted),
+                      style: TextStyle(fontSize: 12, color: _muted),
                     ),
                   if (item.options.isNotEmpty) CartOptionsLabel(item: item),
                   const SizedBox(height: 6),
@@ -184,7 +188,7 @@ class CartScreen extends StatelessWidget {
                             if (hasDiscount)
                               Text(
                                 money(item.regularPrice),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: _muted,
                                   decoration: TextDecoration.lineThrough,
@@ -195,8 +199,8 @@ class CartScreen extends StatelessWidget {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(20),
+                          color: AppColors.page,
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -211,7 +215,7 @@ class CartScreen extends StatelessWidget {
                               child: Text(
                                 '${item.qty}',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   color: _navy,
                                 ),
@@ -242,14 +246,14 @@ class CartScreen extends StatelessWidget {
 
   Widget _summaryRow(String label, String value, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: Text(label, style: const TextStyle(color: _muted)),
+            child: Text(label, style: TextStyle(color: _muted)),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             value,
             style: TextStyle(fontWeight: FontWeight.w600, color: color),
@@ -269,13 +273,13 @@ class CartScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.receipt_long_outlined, size: 18, color: _navy),
+                Icon(Icons.receipt_long_outlined, size: 18, color: _navy),
                 const SizedBox(width: 6),
                 // Wraps on a narrow phone instead of running past the edge
                 Expanded(
                   child: Text(
                     tr('សង្ខេបការបញ្ជាទិញ'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: _navy,
@@ -284,7 +288,7 @@ class CartScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
             _summaryRow(tr('ចំនួន'), '${cart.count}'),
             _summaryRow(tr('តម្លៃសរុបមុនបញ្ចុះ'), money(cart.regularTotal)),
             if (cart.discount > 0)
@@ -295,24 +299,24 @@ class CartScreen extends StatelessWidget {
               ),
             // What the discounts add up to, in green, so the saving is felt
             if (cart.discount > 0) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
-                  vertical: 8,
+                  vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF16A34A).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFF30D158).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.savings_outlined,
                       size: 18,
-                      color: Color(0xFF16A34A),
+                      color: Color(0xFF30D158),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
                         trf(
@@ -320,7 +324,7 @@ class CartScreen extends StatelessWidget {
                           'You save ${money(cart.discount)}',
                         ),
                         style: const TextStyle(
-                          color: Color(0xFF16A34A),
+                          color: Color(0xFF30D158),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -337,9 +341,10 @@ class CartScreen extends StatelessWidget {
                   tr('សរុប'),
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                 ),
-                Text(
-                  money(cart.total),
-                  style: const TextStyle(
+                // Counts to the new total when a quantity changes
+                CountUpMoney(
+                  cart.total,
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: _navy,
@@ -357,7 +362,7 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cart = Cart.instance;
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: storeAppBar(
         title: Text(tr('កន្ត្រកទំនិញ')),
         actions: [
@@ -374,11 +379,11 @@ class CartScreen extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFBBF24),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                     child: Text(
                       trf('${cart.count} គ្រឿង', '${cart.count} items'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _navy,
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
@@ -388,67 +393,52 @@ class CartScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListenableBuilder(
-        listenable: cart,
-        builder: (context, _) {
-          if (cart.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 110,
-                    height: 110,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
-                      ),
+      // The list, with the "Undo" bar sliding up over its bottom edge
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: ListenableBuilder(
+              listenable: cart,
+              builder: (context, _) {
+                if (cart.isEmpty) {
+                  return StatusView(
+                    icon: Icons.shopping_cart_outlined,
+                    title: tr('Cart ទទេ'),
+                    message: trf(
+                      'រើសទូរស័ព្ទដែលអ្នកចូលចិត្ត ហើយដាក់ក្នុង Cart',
+                      'Pick a phone you like and add it here',
                     ),
-                    child: const Icon(
-                      Icons.shopping_cart_outlined,
-                      size: 52,
-                      color: _navy,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    tr('Cart ទទេ'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: _navy,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => Navigator.maybePop(context),
-                    style: FilledButton.styleFrom(backgroundColor: _orange),
-                    icon: const Icon(Icons.storefront_outlined),
-                    label: Text(trf('ទៅមើលទូរស័ព្ទ', 'Browse phones')),
-                  ),
-                ],
-              ),
-            );
-          }
-          return ListView(
-            padding: const EdgeInsets.all(12),
-            children: [
-              for (final item in cart.items) _item(cart, item),
-              const SizedBox(height: 4),
-              _summary(cart),
-            ],
-          );
-        },
+                    actionLabel: trf('ទៅមើលទូរស័ព្ទ', 'Browse phones'),
+                    actionIcon: Icons.storefront_outlined,
+                    onAction: () => Navigator.maybePop(context),
+                  );
+                }
+                return ListView(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  children: [
+                    // Each line slides up in turn
+                    for (final (i, item) in cart.items.indexed)
+                      Entrance(index: i, child: _item(cart, item)),
+                    const SizedBox(height: AppSpacing.xxs),
+                    _summary(cart),
+                  ],
+                );
+              },
+            ),
+          ),
+          const Positioned(left: 0, right: 0, bottom: 0, child: CartUndoBar()),
+        ],
       ),
       bottomNavigationBar: ListenableBuilder(
         listenable: cart,
         builder: (context, _) => cart.isEmpty
             ? const SizedBox.shrink()
             : Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                decoration: BoxDecoration(
+                  color: AppColors.glass,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.xl),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Color(0x1A000000),
@@ -471,14 +461,11 @@ class CartScreen extends StatelessWidget {
                                 'សរុប (${cart.count})',
                                 'Total (${cart.count})',
                               ),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: _muted,
-                              ),
+                              style: TextStyle(fontSize: 12, color: _muted),
                             ),
-                            Text(
-                              money(cart.total),
-                              style: const TextStyle(
+                            CountUpMoney(
+                              cart.total,
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: _navy,
@@ -486,14 +473,14 @@ class CartScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: FilledButton.icon(
                             style: FilledButton.styleFrom(
                               backgroundColor: _orange,
                               minimumSize: const Size.fromHeight(50),
                               elevation: 2,
-                              shadowColor: const Color(0x66F97316),
+                              shadowColor: const Color(0x663D7BFF),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),

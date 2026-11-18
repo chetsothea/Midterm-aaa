@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../models/customer.dart';
-import '../../services/api_service.dart';
-import '../../widgets/common.dart';
+import '../../data/models/customer.dart';
+import '../../data/api_service.dart';
+import '../../components/common.dart';
+import '../../components/ux.dart';
+import '../../theme/app_theme.dart';
 
 // The admin corrects a customer's details, or gives them a new password.
 // Returns true when something was saved.
@@ -66,23 +68,23 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     }
   }
 
-  static const _navy = Color(0xFF0F2A5F);
+  static Color get _navy => AppColors.text;
 
   OutlineInputBorder _border(Color color, [double width = 1.2]) =>
       OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(color: color, width: width),
       );
 
   // Soft filled fields with light borders, like the rest of the app's forms
   InputDecoration _decor(String label, IconData icon) => InputDecoration(
     labelText: label,
-    prefixIcon: Icon(icon, color: const Color(0xFF475569)),
+    prefixIcon: Icon(icon, color: AppColors.textSoft),
     filled: true,
-    fillColor: const Color(0xFFF8FAFC),
-    border: _border(const Color(0xFFE2E8F0)),
-    enabledBorder: _border(const Color(0xFFE2E8F0)),
-    focusedBorder: _border(const Color(0xFF0E7490), 1.8),
+    fillColor: AppColors.surface,
+    border: _border(AppColors.line),
+    enabledBorder: _border(AppColors.line),
+    focusedBorder: _border(const Color(0xFF3D7BFF), 1.8),
     errorBorder: _border(Colors.red),
     focusedErrorBorder: _border(Colors.red, 1.8),
   );
@@ -98,8 +100,8 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -116,14 +118,14 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
               CircleAvatar(
                 radius: 15,
                 backgroundColor: const Color(
-                  0xFF0E7490,
+                  0xFF3D7BFF,
                 ).withValues(alpha: 0.12),
-                child: Icon(icon, size: 17, color: const Color(0xFF0E7490)),
+                child: Icon(icon, size: 17, color: const Color(0xFF3D7BFF)),
               ),
               const SizedBox(width: 10),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
                   color: _navy,
@@ -133,10 +135,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
           ),
           if (hint != null) ...[
             const SizedBox(height: 6),
-            Text(
-              hint,
-              style: const TextStyle(color: Colors.black54, fontSize: 13),
-            ),
+            Text(hint, style: TextStyle(color: AppColors.muted, fontSize: 13)),
           ],
           const SizedBox(height: 14),
           ...children,
@@ -152,23 +151,23 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     final joined = customer.joined;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_navy, Color(0xFF0E7490)],
+          colors: [_navy, Color(0xFF3D7BFF)],
         ),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             child: Text(
               customer.name.isEmpty ? '?' : customer.name[0].toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 color: _navy,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
@@ -190,7 +189,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
                     fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xs),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
@@ -217,16 +216,19 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
 
   Widget _headerPill(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 13, color: const Color(0xFFFBBF24)),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xxs),
           // Ends in "…" rather than overflowing on a narrow phone
           Flexible(
             child: Text(
@@ -244,7 +246,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: AppBar(title: const Text('កែព័ត៌មានអតិថិជន')),
       body: Form(
         key: _formKey,
@@ -261,7 +263,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
                   decoration: _decor('ឈ្មោះ *', Icons.person_outline),
                   validator: (v) => v!.trim().isEmpty ? 'សូមបញ្ចូលឈ្មោះ' : null,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 TextFormField(
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
@@ -271,13 +273,13 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
                       ? null
                       : 'Email មិនត្រឹមត្រូវ',
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 TextFormField(
                   controller: _phone,
                   keyboardType: TextInputType.phone,
                   decoration: _decor('លេខទូរស័ព្ទ', Icons.phone_outlined),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 TextFormField(
                   controller: _address,
                   maxLines: 2,
@@ -322,9 +324,11 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
       ),
       // Same bottom bar as Checkout: white, rounded, with the orange main button
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppColors.glass,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
           boxShadow: [
             BoxShadow(
               color: Color(0x1A000000),
@@ -335,21 +339,18 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             child: FilledButton.icon(
               onPressed: _isSaving ? null : _save,
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFF97316),
+                backgroundColor: const Color(0xFF3D7BFF),
                 minimumSize: const Size.fromHeight(50),
               ),
               icon: _isSaving
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
+                      child: DotsLoader(color: Colors.white, size: 5),
                     )
                   : const Icon(Icons.check),
               label: const Text('រក្សាទុក'),

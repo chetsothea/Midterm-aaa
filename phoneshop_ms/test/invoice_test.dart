@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/models/order.dart';
+import 'package:phoneshop_ms/data/models/order.dart';
 import 'package:phoneshop_ms/screens/invoice_screen.dart';
 
 Map<String, dynamic> orderJson({

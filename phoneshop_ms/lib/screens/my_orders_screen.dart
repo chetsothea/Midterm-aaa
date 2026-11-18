@@ -1,13 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/order.dart';
-import '../services/api_service.dart';
-import '../widgets/common.dart';
-import '../widgets/confirm_dialog.dart';
-import '../widgets/store_app_bar.dart';
+import '../data/models/order.dart';
+import '../data/api_service.dart';
+import '../components/common.dart';
+import '../components/confirm_dialog.dart';
+import '../components/store_app_bar.dart';
 import 'invoice_screen.dart';
 import 'order_tracking_screen.dart';
 import 'payment_screen.dart';
-import '../services/language.dart';
+import '../components/ux.dart';
+import '../components/motion.dart';
+import '../hooks/live.dart';
+import '../components/effects.dart';
+import '../hooks/language.dart';
+import '../components/shop_refresh.dart';
+import '../theme/app_theme.dart';
 
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
@@ -18,6 +25,30 @@ class MyOrdersScreen extends StatefulWidget {
 
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
   late Future<List<Order>> _orders = ApiService.fetchMyOrders();
+  Timer? _live; // re-checks the orders now and then, so a new status shows up
+
+  @override
+  void initState() {
+    super.initState();
+    _live = Live.poll(() => context, _refreshQuietly);
+  }
+
+  @override
+  void dispose() {
+    _live?.cancel();
+    super.dispose();
+  }
+
+  // A background refresh: the list stays on screen (no skeleton) and only
+  // changes once the new orders have arrived
+  Future<void> _refreshQuietly() async {
+    try {
+      final orders = await ApiService.fetchMyOrders();
+      if (mounted) setState(() => _orders = Future.value(orders));
+    } catch (_) {
+      // Offline for a moment: keep what is on screen
+    }
+  }
 
   Future<void> _refresh() async {
     // Block body: an arrow would return the Future, which setState() rejects
@@ -146,12 +177,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   visualDensity: VisualDensity.compact,
                   selected: _filter == key,
                   selectedColor: _navy,
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.surface,
                   side: BorderSide(
-                    color: _filter == key ? _navy : const Color(0xFFE2E8F0),
+                    color: _filter == key ? _navy : AppColors.line,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
                   label: Text(
                     '${labels[key]}  ${counts[key]}',
@@ -171,63 +202,47 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
   // No orders yet: a friendly picture and a way back to the phones
   Widget _empty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 110,
-            height: 110,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
-              ),
-            ),
-            child: const Icon(
-              Icons.receipt_long_outlined,
-              size: 52,
-              color: _navy,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            tr('មិនទាន់មាន Order នៅឡើយ'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: _navy,
-            ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => Navigator.maybePop(context),
-            style: FilledButton.styleFrom(
-              backgroundColor: _orange,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            icon: const Icon(Icons.storefront_outlined),
-            label: Text(trf('ទៅមើលទូរស័ព្ទ', 'Browse phones')),
-          ),
-        ],
+    return StatusView(
+      icon: Icons.receipt_long_outlined,
+      title: tr('មិនទាន់មាន Order នៅឡើយ'),
+      message: trf(
+        'Order ដែលអ្នកបញ្ជាទិញនឹងបង្ហាញនៅទីនេះ',
+        'Orders you place will show up here',
       ),
+      actionLabel: trf('ទៅមើលទូរស័ព្ទ', 'Browse phones'),
+      actionIcon: Icons.storefront_outlined,
+      onAction: () => Navigator.maybePop(context),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      appBar: storeAppBar(title: Text(tr('Order របស់ខ្ញុំ'))),
+      backgroundColor: AppColors.page,
+      appBar: storeAppBar(
+        title: Text(tr('Order របស់ខ្ញុំ')),
+        // Status updates arrive by themselves
+        actions: const [
+          Center(
+            child: LiveDot(color: Color(0xFF4ADE80), textColor: Colors.white),
+          ),
+          SizedBox(width: AppSpacing.sm),
+        ],
+      ),
       body: FutureBuilder<List<Order>>(
         future: _orders,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
+            return const ListSkeleton();
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return StatusView(
+              icon: Icons.wifi_off_rounded,
+              error: true,
+              title: trf('មិនអាចភ្ជាប់ទៅហាងបានទេ', "Can't reach the shop"),
+              actionLabel: trf('ព្យាយាមម្តងទៀត', 'Try again'),
+              onAction: _refresh,
+            );
           } else if (snapshot.data!.isEmpty) {
             return _empty();
           }
@@ -237,12 +252,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             children: [
               _filters(all),
               Expanded(
-                child: RefreshIndicator(
+                child: ShopRefresh(
                   onRefresh: _refresh,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
                     children: [
-                      for (final order in shown) _orderCard(order),
+                      for (final (i, order) in shown.indexed)
+                        Entrance(index: i, child: _orderCard(order)),
                       if (shown.isEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 48),
@@ -252,7 +268,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                                 'មិនមាន Order ក្នុងផ្នែកនេះ',
                                 'No orders here',
                               ),
-                              style: const TextStyle(color: Colors.black54),
+                              style: TextStyle(color: AppColors.muted),
                             ),
                           ),
                         ),
@@ -267,8 +283,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  static const _navy = Color(0xFF0F2A5F);
-  static const _orange = Color(0xFFF97316);
+  static Color get _navy => AppColors.text;
+  static const _orange = Color(0xFF3D7BFF);
   // The same rounded corners as the store's other buttons
   static final _rounded = RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(14),
@@ -299,8 +315,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -312,7 +328,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         border: Border(left: BorderSide(color: color, width: 5)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -331,7 +347,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         child: Text(
                           'Order ${order.ref}',
                           maxLines: 1,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                             color: _navy,
@@ -340,15 +356,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                       ),
                       Text(
                         _date(order.createdAt),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black45,
-                        ),
+                        style: TextStyle(fontSize: 12, color: AppColors.muted),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.xs),
                 StatusBadge(
                   status: order.status,
                   label: orderStatusLabels[order.status]!,
@@ -364,16 +377,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   height: 64,
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+                      colors: [AppColors.surfaceHigh, AppColors.tileLow],
                     ),
                   ),
                   child: PhoneImage(url: first?.imageUrl ?? '', size: 52),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,35 +406,35 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                           ].join(' • '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: AppColors.muted,
                           ),
                         ),
                       if (more > 0)
                         Text(
                           trf('+ $more ទៀត', '+ $more more'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: AppColors.muted,
                           ),
                         ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.xs),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       money(order.total),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                         color: _navy,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xxs),
                     StatusBadge(
                       status: order.paymentStatus,
                       label: paymentStatusLabels[order.paymentStatus]!,
@@ -430,10 +443,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             _progress(order.status),
             if (location.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   const Icon(
@@ -441,7 +454,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     size: 16,
                     color: Colors.redAccent,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: AppSpacing.xxs),
                   Expanded(
                     child: Text(
                       location,
@@ -547,8 +560,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
     const steps = ['pending', 'confirmed', 'shipping', 'delivered'];
     final reached = steps.indexOf(status);
-    const done = Color(0xFF16A34A);
-    const todo = Color(0xFFE2E8F0);
+    const done = Color(0xFF30D158);
+    final todo = AppColors.line;
     // Each step takes a quarter of the width, so long labels can't push past the edge
     Widget line(bool on, bool show) => Expanded(
       child: Container(
@@ -583,7 +596,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     maxLines: 1,
                     style: TextStyle(
                       fontSize: 10,
-                      color: i == reached ? done : Colors.black45,
+                      color: i == reached ? done : AppColors.muted,
                       fontWeight: i == reached
                           ? FontWeight.w700
                           : FontWeight.normal,

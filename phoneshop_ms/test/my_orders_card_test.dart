@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/screens/my_orders_screen.dart';
 import 'package:phoneshop_ms/screens/payment_screen.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
 
 Map<String, dynamic> order(
   int number,

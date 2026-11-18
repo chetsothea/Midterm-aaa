@@ -23,3 +23,6 @@ build/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Real bank QR codes uploaded from Admin (kept out of the public repo)
+phoneshop_api/public/uploads/qr_*

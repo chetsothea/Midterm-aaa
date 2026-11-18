@@ -84,6 +84,17 @@ class Product extends Model
         $this->attributes['condition'] = $value ?: 'New';
     }
 
+    // Adds reviews_avg_rating and reviews_count to each phone
+    public function scopeWithRating($query)
+    {
+        return $query->withAvg('reviews', 'rating')->withCount('reviews');
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -108,10 +119,6 @@ class Product extends Model
 
     private static function uploadUrl(?string $file): string
     {
-        if (! $file) {
-            return '';
-        }
-
-        return str_starts_with($file, 'http') ? $file : url('uploads/'.$file);
+        return \App\Support\Uploads::url($file);
     }
 }

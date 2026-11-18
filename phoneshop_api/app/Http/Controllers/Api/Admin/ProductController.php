@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Support\BackgroundRemover;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -70,9 +72,7 @@ class ProductController extends Controller
 
         foreach ($request->file('color_images', []) as $color => $file) {
             $this->deleteImage($images[$color] ?? null);
-            $name = Str::random(20).'.'.$file->extension();
-            $file->move(public_path('uploads'), $name);
-            $images[$color] = $name;
+            $images[$color] = $this->storeUpload($file);
         }
 
         foreach (array_diff(array_keys($images), $product->colorOptions()) as $removed) {
@@ -89,11 +89,21 @@ class ProductController extends Controller
             return null;
         }
 
-        $file = $request->file('image');
+        return $this->storeUpload($request->file('image'));
+    }
+
+    // Saves an uploaded picture and takes its white / checkerboard background
+    // off (a transparent PNG), so the phone sits cleanly on any card
+    private function storeUpload(UploadedFile $file): string
+    {
         $name = Str::random(20).'.'.$file->extension();
         $file->move(public_path('uploads'), $name);
+        $clean = BackgroundRemover::process(public_path('uploads/'.$name));
+        if ($clean && $clean !== $name) {
+            unlink(public_path('uploads/'.$name));
+        }
 
-        return $name;
+        return $clean ?? $name;
     }
 
     private function deleteImage(?string $image): void

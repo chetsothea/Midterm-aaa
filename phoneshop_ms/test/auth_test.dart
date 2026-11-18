@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:phoneshop_ms/services/google_auth.dart';
+import 'package:phoneshop_ms/data/google_auth.dart';
 import 'package:phoneshop_ms/screens/login_screen.dart';
 import 'package:phoneshop_ms/screens/register_screen.dart';
-import 'package:phoneshop_ms/widgets/auth_ui.dart';
+import 'package:phoneshop_ms/components/auth_ui.dart';
 
 void main() {
   testWidgets(
     'login asks for email and password, and the eye shows the password',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+      // Let the card finish swinging in (3D entrance) before tapping on it
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('ចូលគណនីរបស់អ្នក'), findsOneWidget);
       await tester.ensureVisible(find.text('ចូល'));

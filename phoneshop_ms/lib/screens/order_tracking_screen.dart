@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import '../models/order.dart';
-import '../services/api_service.dart';
-import '../widgets/common.dart';
-import '../widgets/order_tracking.dart';
-import '../services/language.dart';
+import '../data/models/order.dart';
+import '../data/api_service.dart';
+import '../components/common.dart';
+import '../components/order_tracking.dart';
+import '../hooks/language.dart';
+import '../components/shop_refresh.dart';
+import '../components/motion.dart';
+import '../theme/app_theme.dart';
 
 // Where is my package? Progress, courier, delivery address and every step so far.
 // Opens with the order the customer tapped, then reloads it for the latest steps.
@@ -116,12 +119,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ? null
           : SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 child: FilledButton.icon(
                   onPressed: _confirming ? null : _confirmReceived,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    backgroundColor: const Color(0xFF16A34A),
+                    backgroundColor: const Color(0xFF30D158),
                   ),
                   icon: const Icon(Icons.check_circle_outline),
                   label: Text(tr('ខ្ញុំបានទទួលឥវ៉ាន់ហើយ')),
@@ -133,28 +136,25 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         actions: [
           IconButton(
             tooltip: 'Refresh',
+            // While it reloads, the icon breathes instead of a spinner
             icon: _loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const Pulse(child: Icon(Icons.sync_rounded))
                 : const Icon(Icons.refresh),
             onPressed: _loading ? null : _reload,
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF1F5F9),
-      body: RefreshIndicator(
+      backgroundColor: AppColors.page,
+      body: ShopRefresh(
         onRefresh: _reload,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
           children: [
             _hero(),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             if (_order.receivedAt != null) ...[
               _receivedNotice(),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
             ],
             _card(
               icon: Icons.timeline,
@@ -175,7 +175,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   const SizedBox(height: 2),
                   Text(
                     _order.address,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: AppColors.muted),
                   ),
                 ],
               ),
@@ -198,7 +198,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     );
   }
 
-  static const _navy = Color(0xFF0F2A5F);
+  static Color get _navy => AppColors.text;
 
   static const _statusIcons = {
     'pending': Icons.receipt_long,
@@ -224,19 +224,19 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (latest != null) _when(latest.time),
     ].join(' • ');
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: cancelled
-              ? const [Color(0xFF7F1D1D), Color(0xFFDC2626)]
-              : const [_navy, Color(0xFF0E7490)],
+              ? const [Color(0xFF7F1D1D), Color(0xFFFF453A)]
+              : [_navy, Color(0xFF3D7BFF)],
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x330F2A5F),
+            color: AppColors.shadow,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -276,7 +276,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   ),
                 ),
                 if (where.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     where,
                     maxLines: 2,
@@ -293,12 +293,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   Widget _receivedNotice() {
-    const green = Color(0xFF16A34A);
+    const green = Color(0xFF30D158);
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: const Border(left: BorderSide(color: green, width: 5)),
       ),
       child: Row(
@@ -330,8 +330,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -349,14 +349,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: _navy,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w800, color: _navy),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           child,
         ],
       ),
@@ -365,17 +362,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   Widget _itemRow(OrderItem item) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
       child: Row(
         children: [
           Container(
             width: 48,
             height: 48,
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(AppSpacing.xxs),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+              gradient: LinearGradient(
+                colors: [AppColors.surfaceHigh, AppColors.tileLow],
               ),
             ),
             child: PhoneImage(url: item.imageUrl, size: 40),
@@ -388,7 +385,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             money(item.price * item.qty),
             style: const TextStyle(fontWeight: FontWeight.w700),

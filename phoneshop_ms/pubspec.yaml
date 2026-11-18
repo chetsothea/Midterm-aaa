@@ -43,6 +43,9 @@ dependencies:
   share_plus: ^13.3.1
   flutter_svg: ^2.3.2
   shared_preferences: ^2.5.6
+  youtube_player_iframe: ^6.0.2
+  flutter_secure_storage: ^11.2.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:
@@ -74,7 +77,24 @@ flutter:
     - assets/images/banner_1.jpg
     - assets/images/banner_2.jpg
     - assets/images/banner_3.jpg
+    # Mock mode: the 20-phone catalogue and its pictures (lib/data/mock_backend.dart)
+    - assets/data/phones.json
+    - assets/data/phones/
   #   - images/a_dot_ham.jpeg
+
+  # Kantumruy Pro (Google Fonts, SIL Open Font License: assets/fonts/OFL.txt):
+  # one family for Khmer and Latin, used by the whole app (lib/theme.dart)
+  fonts:
+    - family: KantumruyPro
+      fonts:
+        - asset: assets/fonts/KantumruyPro-400.ttf
+          weight: 400
+        - asset: assets/fonts/KantumruyPro-500.ttf
+          weight: 500
+        - asset: assets/fonts/KantumruyPro-600.ttf
+          weight: 600
+        - asset: assets/fonts/KantumruyPro-700.ttf
+          weight: 700
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../models/order.dart';
-import '../../services/api_service.dart';
-import '../../widgets/common.dart';
-import '../../widgets/courier_logo.dart';
-import '../../widgets/order_tracking.dart';
+import '../../data/models/order.dart';
+import '../../data/api_service.dart';
+import '../../components/common.dart';
+import '../../components/courier_logo.dart';
+import '../../components/order_tracking.dart';
 import '../invoice_screen.dart';
+import '../../components/ux.dart';
+import '../../components/shop_refresh.dart';
+import '../../hooks/language.dart';
+import '../../theme/app_theme.dart';
 
 class AdminOrdersTab extends StatefulWidget {
   final bool Function(Order)?
@@ -213,14 +217,21 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFF1F5F9),
+      color: AppColors.page,
       child: FutureBuilder<List<Order>>(
         future: _orders,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton();
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return StatusView(
+              icon: Icons.wifi_off_rounded,
+              error: true,
+              title: trf('មិនអាចភ្ជាប់ទៅហាងបានទេ', "Can't reach the shop"),
+              message: '${snapshot.error}',
+              actionLabel: trf('ព្យាយាមម្តងទៀត', 'Try again'),
+              onAction: _refresh,
+            );
           }
           final all = snapshot.data!;
           final shown = _shown(all);
@@ -228,7 +239,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
             children: [
               if (widget.only == null) _toolbar(all),
               Expanded(
-                child: RefreshIndicator(
+                child: ShopRefresh(
                   onRefresh: _refresh,
                   child: shown.isEmpty
                       ? ListView(
@@ -239,7 +250,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                               size: 56,
                               color: Colors.black26,
                             ),
-                            SizedBox(height: 8),
+                            SizedBox(height: AppSpacing.xs),
                             Center(child: Text('មិនមាន Order')),
                           ],
                         )
@@ -262,7 +273,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
   Widget _toolbar(List<Order> all) {
     final filters = {'': 'ទាំងអស់', ...orderStatusLabels};
     return Container(
-      color: Colors.white,
+      color: AppColors.glass,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Column(
         children: [
@@ -273,14 +284,14 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
               hintText: 'ស្វែងរក ឈ្មោះ លេខទូរស័ព្ទ ឬកូដ Order',
               prefixIcon: const Icon(Icons.search),
               filled: true,
-              fillColor: const Color(0xFFF1F5F9),
+              fillColor: AppColors.page,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
                 borderSide: BorderSide.none,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           SizedBox(
             height: 36,
             child: ListView(
@@ -307,20 +318,18 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
 
   Widget _filterChip(String status, String label, int count) {
     final selected = _filter == status;
-    final color = status.isEmpty
-        ? const Color(0xFF0F2A5F)
-        : statusColor(status);
+    final color = status.isEmpty ? AppColors.text : statusColor(status);
     return ChoiceChip(
       showCheckmark: false,
       visualDensity: VisualDensity.compact,
       selected: selected,
       selectedColor: color,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       side: BorderSide(color: selected ? color : Colors.black12),
       label: Text(
         '$label  $count',
         style: TextStyle(
-          color: selected ? Colors.white : Colors.black87,
+          color: selected ? Colors.white : AppColors.text2,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
@@ -350,8 +359,8 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 17, color: Colors.black45),
-          const SizedBox(width: 8),
+          Icon(icon, size: 17, color: AppColors.muted),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: Text(
               text,
@@ -369,20 +378,20 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F2A5F),
+              color: AppColors.text,
             ),
           ),
           const SizedBox(height: 6),
@@ -406,8 +415,8 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+        gradient: LinearGradient(
+          colors: [AppColors.surfaceHigh, AppColors.tileLow],
         ),
       ),
       child: PhoneImage(url: url, size: size - 6),
@@ -426,8 +435,8 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
       margin: const EdgeInsets.only(bottom: 10),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -455,8 +464,8 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                   children: [
                     TextSpan(
                       text: '#${order.id} ',
-                      style: const TextStyle(
-                        color: Colors.black45,
+                      style: TextStyle(
+                        color: AppColors.muted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -470,13 +479,13 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
             Text(
               money(order.total),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
-                color: Color(0xFF0F2A5F),
+                color: AppColors.text,
               ),
             ),
           ],
@@ -493,15 +502,12 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                       : order.items.first.productName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF334155),
-                  ),
+                  style: TextStyle(fontSize: 13, color: AppColors.text3),
                 ),
               Text(
                 // The code the customer quotes, so the admin can find this order
                 '$pieces គ្រឿង • ${_when(order.createdAt)}${order.code.isEmpty ? '' : ' • ${order.code}'}',
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
               ),
               const SizedBox(height: 6),
               Wrap(
@@ -525,7 +531,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                             ? Icons.payments_outlined
                             : Icons.qr_code_2,
                         size: 15,
-                        color: Colors.black54,
+                        color: AppColors.muted,
                       ),
                       const SizedBox(width: 3),
                       // Shrinks with "…" on a narrow phone instead of overflowing
@@ -534,9 +540,9 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                           paymentMethodLabels[order.paymentMethod]!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: AppColors.muted,
                           ),
                         ),
                       ),
@@ -550,7 +556,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                   child: Text(
                     '⚠ សូមពិនិត្យការបង់ប្រាក់',
                     style: TextStyle(
-                      color: Color(0xFFEA580C),
+                      color: Color(0xFF2F62D9),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -567,13 +573,13 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
           _section('ទំនិញ', [
             for (final item in order.items)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                 child: Row(
                   children: [
                     _thumb(item.imageUrl, 40),
                     const SizedBox(width: 10),
                     Expanded(child: Text('${item.label} × ${item.qty}')),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       money(item.price * item.qty),
                       style: const TextStyle(fontWeight: FontWeight.w600),
@@ -592,9 +598,9 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                 ),
                 Text(
                   money(order.total),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F2A5F),
+                    color: AppColors.text,
                   ),
                 ),
               ],
@@ -613,9 +619,9 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                 bold: true,
               ),
             if (order.isGuest)
-              const Text(
+              Text(
                 'ទិញជា Guest (គ្មានគណនី)',
-                style: TextStyle(color: Colors.black54, fontSize: 12),
+                style: TextStyle(color: AppColors.muted, fontSize: 12),
               ),
           ]),
           if (order.receivedAt != null)
@@ -640,31 +646,33 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
             margin: const EdgeInsets.only(bottom: 10),
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.line),
             ),
             child: ExpansionTile(
               shape: const Border(),
               collapsedShape: const Border(),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+              ),
               childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
               leading: CircleAvatar(
                 radius: 15,
                 backgroundColor: const Color(
-                  0xFF0E7490,
+                  0xFF3D7BFF,
                 ).withValues(alpha: 0.12),
                 child: const Icon(
                   Icons.route_outlined,
                   size: 17,
-                  color: Color(0xFF0E7490),
+                  color: Color(0xFF3D7BFF),
                 ),
               ),
               title: Text(
                 'ការតាមដានឥវ៉ាន់ (${order.trackings.length})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F2A5F),
+                  color: AppColors.text,
                 ),
               ),
               subtitle: order.trackings.isEmpty
@@ -699,26 +707,26 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                   status: order.status == 'pending' ? 'confirmed' : null,
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF16A34A),
+                  backgroundColor: const Color(0xFF30D158),
                   minimumSize: const Size.fromHeight(46),
                 ),
                 icon: const Icon(Icons.check),
                 label: const Text('បញ្ជាក់បានទទួលប្រាក់'),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
             ] else if (next != null) ...[
               FilledButton.icon(
                 onPressed: () => next.$1 == 'shipping'
                     ? _startShipping(order)
                     : _update(order, status: next.$1),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F2A5F),
+                  backgroundColor: const Color(0xFF101318),
                   minimumSize: const Size.fromHeight(46),
                 ),
                 icon: Icon(_statusIcons[next.$1] ?? Icons.arrow_forward),
                 label: Text(next.$2),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
             ],
             Wrap(
               spacing: 8,
@@ -840,7 +848,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
 
   OutlineInputBorder _border(Color color, [double width = 1.2]) =>
       OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(color: color, width: width),
       );
 
@@ -849,12 +857,12 @@ class _TrackingDialogState extends State<_TrackingDialog> {
       InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF475569)),
+        prefixIcon: Icon(icon, color: AppColors.textSoft),
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-        border: _border(const Color(0xFFE2E8F0)),
-        enabledBorder: _border(const Color(0xFFE2E8F0)),
-        focusedBorder: _border(const Color(0xFF0E7490), 1.8),
+        fillColor: AppColors.surface,
+        border: _border(AppColors.line),
+        enabledBorder: _border(AppColors.line),
+        focusedBorder: _border(const Color(0xFF3D7BFF), 1.8),
         errorBorder: _border(Colors.red),
         focusedErrorBorder: _border(Colors.red, 1.8),
       );
@@ -884,7 +892,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: selected ? color : const Color(0xFFE2E8F0),
+          color: selected ? color : AppColors.line,
           width: selected ? 2 : 1,
         ),
       ),
@@ -902,7 +910,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CourierLogo(name: name, size: 36),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xxs),
                     // Takes what height is left and ends in "…", never overflowing
                     Flexible(
                       child: Text(
@@ -938,10 +946,10 @@ class _TrackingDialogState extends State<_TrackingDialog> {
     return AlertDialog(
       icon: CircleAvatar(
         radius: 26,
-        backgroundColor: const Color(0xFFE0F2FE),
+        backgroundColor: AppColors.surfaceHigh,
         child: Icon(
           widget.askCourier ? Icons.local_shipping : Icons.add_location_alt,
-          color: const Color(0xFF0F2A5F),
+          color: AppColors.text,
           size: 28,
         ),
       ),
@@ -962,7 +970,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xs),
                   // Common delivery companies in Cambodia, three to a row
                   GridView(
                     shrinkWrap: true,
@@ -978,7 +986,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
                       for (final name in couriers.keys) _courierTile(name),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   // Or any other company, typed by hand
                   TextFormField(
                     controller: _courier,
@@ -986,7 +994,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
                     decoration: InputDecoration(
                       labelText: 'ក្រុមហ៊ុនដឹកជញ្ជូន (ឬវាយឈ្មោះផ្សេង)',
                       prefixIcon: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(AppSpacing.xs),
                         child: CourierLogo(
                           name: _courier.text.trim(),
                           size: 28,
@@ -995,7 +1003,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
                       border: const OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _number,
                     decoration: _decor(
@@ -1004,7 +1012,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
                       'ឧ. JT0123456789',
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                 ],
                 TextFormField(
                   controller: _location,
@@ -1015,7 +1023,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
                   ),
                   validator: _needOne,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 TextFormField(
                   controller: _note,
                   maxLines: 2,
@@ -1039,7 +1047,7 @@ class _TrackingDialogState extends State<_TrackingDialog> {
         FilledButton.icon(
           onPressed: _save,
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFFF97316),
+            backgroundColor: const Color(0xFF3D7BFF),
           ),
           icon: const Icon(Icons.check, size: 18),
           label: const Text('រក្សាទុក'),

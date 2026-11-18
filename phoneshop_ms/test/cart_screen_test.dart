@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/models/phone.dart';
+import 'package:phoneshop_ms/data/models/phone.dart';
 import 'package:phoneshop_ms/screens/cart_screen.dart';
-import 'package:phoneshop_ms/services/cart.dart';
+import 'package:phoneshop_ms/hooks/cart.dart';
 
 Phone discounted() => Phone.fromJson({
   'id': 1,
@@ -32,6 +32,8 @@ Future<void> pumpCart(WidgetTester tester, [double width = 360]) async {
   await tester.binding.setSurfaceSize(Size(width, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(const MaterialApp(home: CartScreen()));
+  // Let the cart lines finish sliding in before tapping on them
+  await tester.pump(const Duration(seconds: 1));
 }
 
 void main() {

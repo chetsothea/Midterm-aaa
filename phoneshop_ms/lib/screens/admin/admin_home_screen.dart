@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/api_service.dart';
-import '../../widgets/common.dart';
+import '../../data/api_service.dart';
+import '../../components/common.dart';
 import '../home_screen.dart';
 import 'admin_dashboard_tab.dart';
 import 'admin_orders_tab.dart';
 import 'admin_products_tab.dart';
+import 'admin_live_screen.dart';
+import 'admin_payment_accounts_screen.dart';
+import '../../hooks/language.dart';
+import '../../theme/app_theme.dart';
 
 // How often the admin app asks whether customers placed new orders
 const newOrderCheckInterval = Duration(seconds: 10);
@@ -101,7 +105,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(0xFF0F2A5F),
+          backgroundColor: const Color(0xFF101318),
           duration: const Duration(seconds: 8),
           content: Row(
             children: [
@@ -142,7 +146,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       // The store's bar: navy to teal with rounded bottom corners
       appBar: AppBar(
         foregroundColor: Colors.white,
@@ -151,15 +155,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
         ),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
             gradient: LinearGradient(
-              colors: [Color(0xFF0F2A5F), Color(0xFF0E7490)],
+              colors: [Color(0xFF101318), Color(0xFF3D7BFF)],
             ),
             boxShadow: [
               BoxShadow(
                 blurRadius: 14,
-                color: Color(0x330F2A5F),
+                color: AppColors.shadow,
                 offset: Offset(0, 4),
               ),
             ],
@@ -192,6 +196,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ],
         ),
         actions: [
+          // The banks (ABA, ACLEDA ...) and QR pictures customers pay into
+          IconButton(
+            tooltip: trf('គណនីបង់ប្រាក់', 'Bank accounts'),
+            icon: const Icon(Icons.account_balance_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AdminPaymentAccountsScreen(),
+              ),
+            ),
+          ),
+          // Start / end a YouTube live shopping session
+          IconButton(
+            tooltip: 'Live',
+            icon: const Icon(Icons.podcasts_rounded),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminLiveScreen()),
+            ),
+          ),
           IconButton(
             tooltip: 'Order ថ្មី',
             onPressed: _openOrders,
@@ -217,9 +241,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       // White with rounded top corners like the other bottom bars; the picked tab
       // gets the store menu's gold highlight
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppColors.glass,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
           boxShadow: [
             BoxShadow(
               color: Color(0x1A000000),
@@ -230,23 +256,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         clipBehavior: Clip.antiAlias,
         child: NavigationBar(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
+          backgroundColor: AppColors.surface,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
           height: 68,
-          indicatorColor: const Color(0xFFC08A2E).withValues(alpha: 0.16),
+          indicatorColor: const Color(0xFF3D7BFF).withValues(alpha: 0.16),
           selectedIndex: _tab,
           onDestinationSelected: (i) =>
               i == _ordersTab ? _openOrders() : setState(() => _tab = i),
           destinations: [
             const NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard, color: Color(0xFFC08A2E)),
+              selectedIcon: Icon(Icons.dashboard, color: Color(0xFF3D7BFF)),
               label: 'Dashboard',
             ),
             const NavigationDestination(
               icon: Icon(Icons.phone_android_outlined),
-              selectedIcon: Icon(Icons.phone_android, color: Color(0xFFC08A2E)),
+              selectedIcon: Icon(Icons.phone_android, color: Color(0xFF3D7BFF)),
               label: 'Products',
             ),
             NavigationDestination(
@@ -258,7 +284,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               selectedIcon: Badge(
                 isLabelVisible: _unseen > 0,
                 label: Text('$_unseen'),
-                child: const Icon(Icons.receipt_long, color: Color(0xFFC08A2E)),
+                child: const Icon(Icons.receipt_long, color: Color(0xFF3D7BFF)),
               ),
               label: 'Orders',
             ),

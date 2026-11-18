@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/widgets/motion.dart';
+import 'package:phoneshop_ms/components/motion.dart';
 
 void main() {
   testWidgets('the shine sweeps once, then the screen settles', (tester) async {

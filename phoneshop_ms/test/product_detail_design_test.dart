@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/models/phone.dart';
+import 'package:phoneshop_ms/data/models/phone.dart';
 import 'package:phoneshop_ms/screens/product_detail_screen.dart';
-import 'package:phoneshop_ms/services/favorites.dart';
+import 'package:phoneshop_ms/hooks/favorites.dart';
 
 Phone reno() => Phone.fromJson({
   'id': 20,

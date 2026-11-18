@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/screens/admin/admin_orders_tab.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
 
 void main() {
   testWidgets('admin can confirm a KHQR payment on a guest order', (tester) async {

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/main.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
 
 Map<String, dynamic> order(int id, String status) => {
   'id': id,

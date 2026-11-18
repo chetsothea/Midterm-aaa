@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/widgets/brand_row.dart';
+import 'package:phoneshop_ms/components/brand_row.dart';
 
 const brands = ['Apple', 'HONOR', 'OPPO', 'Samsung', 'Vivo', 'Xiaomi'];
 

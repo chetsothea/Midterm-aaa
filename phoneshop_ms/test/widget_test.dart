@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:phoneshop_ms/main.dart';
-import 'package:phoneshop_ms/models/location.dart';
-import 'package:phoneshop_ms/models/phone.dart';
+import 'package:phoneshop_ms/data/models/location.dart';
+import 'package:phoneshop_ms/data/models/phone.dart';
 import 'package:phoneshop_ms/screens/cart_screen.dart';
 import 'package:phoneshop_ms/screens/product_detail_screen.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
-import 'package:phoneshop_ms/services/cart.dart';
-import 'package:phoneshop_ms/widgets/address_picker.dart';
-import 'package:phoneshop_ms/widgets/brand_wordmark.dart';
-import 'package:phoneshop_ms/widgets/common.dart';
-import 'package:phoneshop_ms/widgets/product_card.dart';
-import 'package:phoneshop_ms/widgets/store_menu.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
+import 'package:phoneshop_ms/hooks/cart.dart';
+import 'package:phoneshop_ms/components/address_picker.dart';
+import 'package:phoneshop_ms/components/brand_wordmark.dart';
+import 'package:phoneshop_ms/components/common.dart';
+import 'package:phoneshop_ms/components/product_card.dart';
+import 'package:phoneshop_ms/components/store_menu.dart';
 
 void main() {
   testWidgets('App opens straight into the store', (WidgetTester tester) async {
@@ -300,6 +300,12 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Blue'));
     await tester.pumpAndSettle();
     expect(find.text('ពណ៌: Blue', findRichText: true), findsOneWidget);
+    // Back up to the picture (the page runs on to the reviews below)
+    await tester.scrollUntilVisible(
+      pictureOf('http://x/blue.jpg'),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(pictureOf('http://x/blue.jpg'), findsOneWidget);
     expect(pictureOf('http://x/main.jpg'), findsNothing);
     await tester.tap(find.text('ដាក់ Cart'));
