@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/main.dart';
-import 'package:phoneshop_ms/widgets/brand_row.dart';
-import 'package:phoneshop_ms/widgets/product_card.dart';
+import 'package:phoneshop_ms/components/brand_row.dart';
+import 'package:phoneshop_ms/components/product_card.dart';
 
 const dealsTitle = 'កំពុងបញ្ចុះតម្លៃ';
 
@@ -106,7 +106,12 @@ void main() {
         expect(row, findsOneWidget);
         expect(deals, ['Big deal', 'Small deal']);
 
-        // Still in the full list too
+        // Still in the full list too (further down, under the 3D hero card)
+        await tester.scrollUntilVisible(
+          find.text('No deal'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.text('No deal'), findsOneWidget);
       },
     );

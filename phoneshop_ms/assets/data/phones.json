@@ -1,0 +1,327 @@
+{
+  "_about": "Mock catalogue of 20 phones for PS168 (prices in USD). Phones released up to 2025 use their published specs and launch prices; 2026 models (iPhone 18 Pro Max, Galaxy S26 series, Xiaomi 17 Ultra, OPPO Find X10, OPPO Reno16, Redmi Note 17, HONOR Magic9 Pro Max) use estimated specs and prices for demo use. Pictures are paths inside the repo's product_images folder; colours without a picture fall back to the main one.",
+  "phones": [
+    {
+      "name": "iPhone 18 Pro Max",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "12GB",
+      "storage_prices": "256GB=1199, 512GB=1399, 1TB=1599",
+      "discount_percent": 0,
+      "stock": 6,
+      "colors": ["Black", "Glacier", "Silver"],
+      "images": {
+        "_main": "iphone_18_promax/iphone_18_promax_main.png",
+        "Black": "iphone_18_promax/iphone_18_promax_black.png",
+        "Glacier": "iphone_18_promax/iphone_18_promax_glacier.png",
+        "Silver": "iphone_18_promax/iphone_18_promax_silver.png"
+      },
+      "description": "6.9\" Super Retina XDR ProMotion 120Hz, A20 Pro chip, 48MP triple camera with 5x telephoto, titanium design, USB-C. Estimated specs."
+    },
+    {
+      "name": "iPhone 17 Pro Max",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "12GB",
+      "storage_prices": "256GB=1199, 512GB=1399, 1TB=1599, 2TB=1999",
+      "discount_percent": 5,
+      "stock": 9,
+      "colors": ["Cosmic Orange", "Deep Blue", "Silver"],
+      "images": {
+        "Cosmic Orange": "iphone_17_pro_max/iphone_17_pro_max_cosmic_orange.png",
+        "Deep Blue": "iphone_17_pro_max/iphone_17_pro_max_deep_blue.png",
+        "Silver": "iphone_17_pro_max/iphone_17_pro_max_silver.png"
+      },
+      "description": "6.9\" ProMotion display up to 120Hz, A19 Pro chip, aluminium unibody with vapour chamber cooling, three 48MP Fusion cameras with 8x optical-quality zoom, up to 39 hours video playback."
+    },
+    {
+      "name": "iPhone 16 Pro Max",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "8GB",
+      "storage_prices": "256GB=1199, 512GB=1399, 1TB=1599",
+      "discount_percent": 15,
+      "stock": 4,
+      "colors": ["Black Titanium", "Desert Titanium", "Natural Titanium", "White Titanium"],
+      "images": {
+        "Black Titanium": "iphone_16_pro_max/iphone_16_pro_max_black_titanium.png",
+        "Desert Titanium": "iphone_16_pro_max/iphone_16_pro_max_desert_titanium.png",
+        "Natural Titanium": "iphone_16_pro_max/iphone_16_pro_max_natural_titanium.png",
+        "White Titanium": "iphone_16_pro_max/iphone_16_pro_max_white_titanium.png"
+      },
+      "description": "6.9\" Super Retina XDR ProMotion, A18 Pro chip, 48MP Fusion + 48MP Ultra Wide + 12MP 5x telephoto, Camera Control button, titanium design."
+    },
+    {
+      "name": "iPhone 15 Pro",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "8GB",
+      "storage_prices": "128GB=999, 256GB=1099, 512GB=1299",
+      "discount_percent": 20,
+      "stock": 10,
+      "colors": ["Natural Titanium", "Blue Titanium", "Black Titanium"],
+      "images": {},
+      "description": "6.1\" Super Retina XDR ProMotion, A17 Pro chip, 48MP main camera with 3x telephoto, Action button, titanium design, USB-C."
+    },
+    {
+      "name": "iPhone 15",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "6GB",
+      "storage_prices": "128GB=699, 256GB=799",
+      "discount_percent": 0,
+      "stock": 12,
+      "colors": ["Black", "Blue", "Pink"],
+      "images": {},
+      "description": "6.1\" Super Retina XDR with Dynamic Island, A16 Bionic, 48MP main camera with 2x telephoto, USB-C."
+    },
+    {
+      "name": "iPhone 13 Pro Max",
+      "brand": "Apple",
+      "category": "2nd Hand",
+      "condition": "95%",
+      "ram": "6GB",
+      "storage_prices": "128GB=549, 256GB=629",
+      "discount_percent": 0,
+      "stock": 3,
+      "colors": ["Graphite", "Gold", "Sierra Blue", "Silver", "Alpine Green"],
+      "images": {
+        "Graphite": "iphone_13_pro_max/iphone_13_pro_max_graphite.png",
+        "Gold": "iphone_13_pro_max/iphone_13_pro_max_gold.png",
+        "Sierra Blue": "iphone_13_pro_max/iphone_13_pro_max_sierra_blue.png",
+        "Silver": "iphone_13_pro_max/iphone_13_pro_max_silver.png",
+        "Alpine Green": "iphone_13_pro_max/iphone_13_pro_max_alpine_green.png"
+      },
+      "description": "Used, 95% condition, battery health 88%. 6.7\" ProMotion 120Hz, A15 Bionic, triple 12MP camera. 3-month shop warranty."
+    },
+    {
+      "name": "iPhone 11",
+      "brand": "Apple",
+      "category": "2nd Hand",
+      "condition": "92%",
+      "ram": "4GB",
+      "storage_prices": "64GB=229, 128GB=269",
+      "discount_percent": 0,
+      "stock": 5,
+      "colors": ["Black", "Green", "Purple", "Red", "White", "Yellow"],
+      "images": {
+        "Black": "iphone_11/iphone_11_black.png",
+        "Green": "iphone_11/iphone_11_green.png",
+        "Purple": "iphone_11/iphone_11_purple.png",
+        "Red": "iphone_11/iphone_11_red.png",
+        "White": "iphone_11/iphone_11_white.png",
+        "Yellow": "iphone_11/iphone_11_yellow.png"
+      },
+      "description": "Used, 92% condition, battery health 84%. 6.1\" Liquid Retina, A13 Bionic, dual 12MP camera with Night mode. 3-month shop warranty."
+    },
+    {
+      "name": "Galaxy S26 Ultra",
+      "brand": "Samsung",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "12GB",
+      "storage_prices": "256GB=1299, 512GB=1419, 1TB=1659",
+      "discount_percent": 0,
+      "stock": 7,
+      "colors": ["Black", "Cobalt Violet", "Sky Blue", "White"],
+      "images": {
+        "Black": "galaxy_s26_ultra/galaxy_s26_ultra_black.png",
+        "Cobalt Violet": "galaxy_s26_ultra/galaxy_s26_ultra_cobalt_violet.png",
+        "Sky Blue": "galaxy_s26_ultra/galaxy_s26_ultra_sky_blue.png",
+        "White": "galaxy_s26_ultra/galaxy_s26_ultra_white.png"
+      },
+      "description": "6.9\" Dynamic AMOLED 2X 120Hz, Snapdragon 8 Elite Gen 5 for Galaxy, 200MP main camera, built-in S Pen, Galaxy AI. Estimated specs."
+    },
+    {
+      "name": "Galaxy S26",
+      "brand": "Samsung",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "12GB",
+      "storage_prices": "256GB=899, 512GB=1019",
+      "discount_percent": 10,
+      "stock": 11,
+      "colors": ["Black", "Cobalt Violet", "Sky Blue", "White"],
+      "images": {
+        "Black": "galaxy_s26/galaxy_s26_black.png",
+        "Cobalt Violet": "galaxy_s26/galaxy_s26_cobalt_violet.png",
+        "Sky Blue": "galaxy_s26/galaxy_s26_sky_blue.png",
+        "White": "galaxy_s26/galaxy_s26_white.png"
+      },
+      "description": "6.3\" Dynamic AMOLED 2X 120Hz, flagship chip, 50MP triple camera, Galaxy AI, 7 years of updates. Estimated specs."
+    },
+    {
+      "name": "Galaxy S24 Ultra",
+      "brand": "Samsung",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "12GB",
+      "storage_prices": "256GB=1299, 512GB=1419, 1TB=1659",
+      "discount_percent": 25,
+      "stock": 8,
+      "colors": ["Titanium Gray", "Titanium Black", "Titanium Violet"],
+      "images": {},
+      "description": "6.8\" QHD+ Dynamic AMOLED 2X 120Hz, Snapdragon 8 Gen 3 for Galaxy, 200MP main camera with 5x telephoto, built-in S Pen, titanium frame."
+    },
+    {
+      "name": "Galaxy A55",
+      "brand": "Samsung",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "8GB",
+      "storage_prices": "128GB=399, 256GB=449",
+      "discount_percent": 0,
+      "stock": 20,
+      "colors": ["Navy", "Iceblue", "Lilac"],
+      "images": {},
+      "description": "6.6\" Super AMOLED 120Hz, Exynos 1480, 50MP OIS main camera, IP67, metal frame, 5000mAh battery."
+    },
+    {
+      "name": "Xiaomi 17 Ultra",
+      "brand": "Xiaomi",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "16GB",
+      "storage_prices": "512GB=1299, 1TB=1499",
+      "discount_percent": 0,
+      "stock": 2,
+      "colors": ["Black", "White", "Starlit Green"],
+      "images": {
+        "Black": "xiaomi_17_ultra/xiaomi_17_ultra_black.png",
+        "White": "xiaomi_17_ultra/xiaomi_17_ultra_white.png",
+        "Starlit Green": "xiaomi_17_ultra/xiaomi_17_ultra_starlit_green.png"
+      },
+      "description": "6.73\" LTPO AMOLED 120Hz, Snapdragon 8 Elite Gen 5, Leica 1-inch main camera with periscope telephoto, 90W fast charging. Estimated specs."
+    },
+    {
+      "name": "Redmi Note 17",
+      "brand": "Xiaomi",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "8GB",
+      "storage_prices": "128GB=249, 256GB=279",
+      "discount_percent": 0,
+      "stock": 25,
+      "colors": ["Arctic Purple", "Dark Night", "Sky Teal"],
+      "images": {
+        "Arctic Purple": "redmi_note_17/redmi_note_17_arctic_purple.png",
+        "Dark Night": "redmi_note_17/redmi_note_17_dark_night.png",
+        "Sky Teal": "redmi_note_17/redmi_note_17_sky_teal.png"
+      },
+      "description": "6.67\" AMOLED 120Hz, 108MP main camera, 5500mAh battery with 45W charging, IP64. Estimated specs."
+    },
+    {
+      "name": "Redmi Note 13 Pro",
+      "brand": "Xiaomi",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "8GB",
+      "storage_prices": "256GB=299, 512GB=349",
+      "discount_percent": 0,
+      "stock": 24,
+      "colors": ["Midnight Black", "Aurora Purple", "Ocean Teal"],
+      "images": {},
+      "description": "6.67\" 1.5K AMOLED 120Hz, 200MP OIS main camera, 67W turbo charging, 5000mAh battery."
+    },
+    {
+      "name": "Find X10",
+      "brand": "Oppo",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "16GB",
+      "storage_prices": "256GB=999, 512GB=1099",
+      "discount_percent": 0,
+      "stock": 0,
+      "colors": ["Ice Blue", "Light Titanium", "Warm Orange"],
+      "images": {
+        "Ice Blue": "oppo_find_x10/oppo_find_x10_ice_blue.png",
+        "Light Titanium": "oppo_find_x10/oppo_find_x10_light_titanium.png",
+        "Warm Orange": "oppo_find_x10/oppo_find_x10_warm_orange.png"
+      },
+      "description": "6.59\" LTPO AMOLED 120Hz, MediaTek Dimensity flagship, Hasselblad triple 50MP camera, 7000mAh battery. Sold out, more coming. Estimated specs."
+    },
+    {
+      "name": "Reno16",
+      "brand": "Oppo",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "12GB",
+      "storage_prices": "256GB=499, 512GB=569",
+      "discount_percent": 0,
+      "stock": 14,
+      "colors": ["Pop White", "Starlight Black", "Starry White", "Twilight Violet"],
+      "images": {
+        "Pop White": "oppo_reno16/oppo_reno16_pop_white.png",
+        "Starlight Black": "oppo_reno16/oppo_reno16_starlight_black.png",
+        "Starry White": "oppo_reno16/oppo_reno16_starry_white.png",
+        "Twilight Violet": "oppo_reno16/oppo_reno16_twilight_violet.png"
+      },
+      "description": "6.59\" AMOLED 120Hz, 50MP portrait camera with 3.5x telephoto, 80W SUPERVOOC, IP69. Estimated specs."
+    },
+    {
+      "name": "Reno 11",
+      "brand": "Oppo",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "12GB",
+      "storage_prices": "256GB=449",
+      "discount_percent": 10,
+      "stock": 3,
+      "colors": ["Wave Green", "Rock Grey"],
+      "images": {},
+      "description": "6.7\" curved AMOLED 120Hz, Dimensity 7050, 50MP main + 32MP 2x portrait telephoto, 67W SUPERVOOC."
+    },
+    {
+      "name": "V60 Lite",
+      "brand": "Vivo",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "8GB",
+      "storage_prices": "128GB=299, 256GB=329",
+      "discount_percent": 0,
+      "stock": 16,
+      "colors": ["Elegant Black", "Pop Pink", "Titanium Blue"],
+      "images": {
+        "Elegant Black": "vivo_v60_lite/vivo_v60_lite_elegant_black.png",
+        "Pop Pink": "vivo_v60_lite/vivo_v60_lite_pop_pink.png",
+        "Titanium Blue": "vivo_v60_lite/vivo_v60_lite_titanium_blue.png"
+      },
+      "description": "6.77\" AMOLED 120Hz, 50MP main camera, 6500mAh battery with 90W fast charging, IP65."
+    },
+    {
+      "name": "Magic9 Pro Max",
+      "brand": "Honor",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "16GB",
+      "storage_prices": "512GB=1199",
+      "discount_percent": 0,
+      "stock": 3,
+      "colors": ["Moss Green", "Shadow Black", "Silver"],
+      "images": {
+        "Moss Green": "honor_magic9_pro_max/honor_magic9_pro_max_moss_green.png",
+        "Shadow Black": "honor_magic9_pro_max/honor_magic9_pro_max_shadow_black.png",
+        "Silver": "honor_magic9_pro_max/honor_magic9_pro_max_silver.png"
+      },
+      "description": "6.8\" LTPO OLED 120Hz, Snapdragon flagship, 200MP periscope telephoto, silicon-carbon battery with 100W charging. Estimated specs."
+    },
+    {
+      "name": "Pixel 10 Pro",
+      "brand": "Google",
+      "category": "Smartphone",
+      "condition": "New",
+      "ram": "16GB",
+      "storage_prices": "128GB=999, 256GB=1099, 512GB=1219",
+      "discount_percent": 0,
+      "stock": 5,
+      "colors": ["Obsidian", "Porcelain", "Moonstone", "Jade"],
+      "images": {},
+      "description": "6.3\" Super Actua LTPO OLED 120Hz, Google Tensor G5, 50MP main + 48MP 5x telephoto, Gemini built in, 7 years of updates."
+    }
+  ]
+}

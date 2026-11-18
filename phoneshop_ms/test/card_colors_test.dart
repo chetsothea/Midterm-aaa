@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/models/phone.dart';
-import 'package:phoneshop_ms/widgets/product_card.dart';
+import 'package:phoneshop_ms/data/models/phone.dart';
+import 'package:phoneshop_ms/components/product_card.dart';
 
 Phone phone({
   String color = 'Blue, Red, Black',

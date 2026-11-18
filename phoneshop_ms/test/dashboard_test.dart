@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/screens/admin/admin_dashboard_tab.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
-import 'package:phoneshop_ms/widgets/dashboard_charts.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
+import 'package:phoneshop_ms/components/dashboard_charts.dart';
 
 Map<String, dynamic> stats({
   List<Map<String, dynamic>>? revenue,

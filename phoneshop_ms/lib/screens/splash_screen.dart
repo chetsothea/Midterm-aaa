@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../widgets/motion.dart';
+import '../components/motion.dart';
 import 'home_screen.dart';
-import '../widgets/brand_wordmark.dart';
+import '../theme/theme.dart';
+import '../components/brand_wordmark.dart';
+import '../components/effects.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 // The first thing customers see: the logo on the shop's colours, then the store.
 // The store is built underneath from the start, so its phones are already loading
@@ -15,16 +18,6 @@ class SplashScreen extends StatefulWidget {
 
   static const duration = Duration(seconds: 3);
 
-  // What the shop sells, shown one after another under the name
-  static const products = [
-    'iPhone',
-    'Samsung Galaxy',
-    'OPPO',
-    'HONOR',
-    'vivo',
-    'iPad',
-  ];
-
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -33,21 +26,26 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 600),
+    duration: const Duration(milliseconds: 1100),
   )..forward();
-  // The product names appear one by one, after the logo has landed
+  // The phone icon spins in on its vertical axis in 3D and lands facing you
+  late final _spin = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0, 0.8, curve: Curves.easeOutBack),
+  );
+  // The brand logos fade in after the logo has landed
   late final _products = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1600),
+    duration: const Duration(milliseconds: 900),
   );
   late final _fade = CurvedAnimation(
     parent: _controller,
     curve: Curves.easeOut,
   );
-  late final _scale = Tween<double>(
-    begin: 0.7,
-    end: 1,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+  late final _scale = Tween<double>(begin: 0.7, end: 1).animate(
+    // A real spring: overshoots, wobbles, settles
+    CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+  );
   // A soft ring that spreads out behind the logo
   late final _ring = CurvedAnimation(
     parent: _controller,
@@ -86,46 +84,52 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  // A soft see-through circle in the background
-  static Widget _bubble(double size, double alpha) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: alpha),
-      ),
-    );
-  }
-
-  // A thin bar that fills while the store loads underneath, and the shop's name
+  // A thin blue line that fills while the store loads underneath, and the
+  // shop's name, clear of the home indicator
   Widget _footer() {
     return Positioned(
       left: 0,
       right: 0,
-      bottom: 56,
+      bottom: AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
       child: Column(
         children: [
-          SizedBox(
-            width: 140,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: 1),
-                duration: SplashScreen.duration,
-                builder: (context, value, _) => LinearProgressIndicator(
-                  value: value,
-                  minHeight: 4,
-                  backgroundColor: Colors.white24,
-                  color: const Color(0xFFFBBF24),
+          Container(
+            width: 120,
+            height: 3,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              color: Colors.white.withValues(alpha: 0.12),
+            ),
+            alignment: Alignment.centerLeft,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: SplashScreen.duration,
+              curve: Curves.easeInOutCubic,
+              builder: (context, value, _) => FractionallySizedBox(
+                widthFactor: value,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    color: AppColors.accent,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withValues(alpha: 0.7),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          const Text(
+          const SizedBox(height: AppSpacing.sm),
+          Text(
             'PS168 Phone Shop',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 12,
+              letterSpacing: 0.4,
+            ),
           ),
         ],
       ),
@@ -134,20 +138,34 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _logo() {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0B1F4D), Color(0xFF0F2A5F), Color(0xFF0E7490)],
-          ),
-        ),
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: AuroraBackground(
+        // A dim, slow aurora: atmosphere, not decoration
+        blobs: const [
+          Color(0xFF1E3A8A),
+          Color(0xFF3D7BFF),
+          Color(0xFF1E40AF),
+          Color(0xFF312E81),
+        ],
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned(top: -90, right: -70, child: _bubble(260, 0.06)),
-            Positioned(bottom: -120, left: -90, child: _bubble(320, 0.05)),
-            Positioned(top: 140, left: -40, child: _bubble(110, 0.04)),
+            // A blue spotlight behind the logo
+            Center(
+              child: Container(
+                width: 360,
+                height: 360,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.accent.withValues(alpha: 0.28),
+                      AppColors.accent.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             _footer(),
             _centre(),
           ],
@@ -157,9 +175,14 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _centre() {
-    // Shrinks to fit a small phone, clear of the loading bar at the bottom
+    // Shrinks to fit a small phone, clear of the loading line at the bottom
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xl,
+        AppSpacing.lg,
+        96,
+      ),
       child: Center(
         child: FittedBox(fit: BoxFit.scaleDown, child: _centreContent()),
       ),
@@ -179,154 +202,96 @@ class _SplashScreenState extends State<SplashScreen>
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
+                  // A blue ring that spreads out once as the logo lands
                   AnimatedBuilder(
                     animation: _ring,
                     builder: (context, _) => Container(
-                      width: 120 + 90 * _ring.value,
-                      height: 120 + 90 * _ring.value,
+                      width: 120 + 100 * _ring.value,
+                      height: 120 + 100 * _ring.value,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withValues(
-                            alpha: 0.35 * (1 - _ring.value),
+                          color: AppColors.accent.withValues(
+                            alpha: 0.5 * (1 - _ring.value),
                           ),
-                          width: 2,
+                          width: 1.5,
                         ),
                       ),
                     ),
                   ),
-                  // The app icon itself (it has its own rounded tile), with a thin
-                  // light edge so its navy doesn't melt into the navy background
-                  Container(
-                    width: 120,
-                    height: 120,
-                    foregroundDecoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: Colors.white70, width: 2),
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      // A cyan glow behind the icon, and its shadow
-                      boxShadow: const [
-                        BoxShadow(
-                          blurRadius: 40,
-                          spreadRadius: 4,
-                          color: Color(0x6622D3EE),
+                  // The app icon spins in on its vertical axis in 3D
+                  AnimatedBuilder(
+                    animation: _spin,
+                    builder: (context, child) {
+                      final rest = 1 - _spin.value;
+                      return Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.0015)
+                          ..rotateY(rest * 4.2) // about 1⅓ turns
+                          ..rotateX(rest * 0.5),
+                        child: child,
+                      );
+                    },
+                    child: Container(
+                      width: 112,
+                      height: 112,
+                      // A hairline glass edge and a blue glow, like the cards
+                      foregroundDecoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.sheet),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          width: 1.5,
                         ),
-                        BoxShadow(
-                          blurRadius: 24,
-                          color: Color(0x55000000),
-                          offset: Offset(0, 12),
-                        ),
-                      ],
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.sheet),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 48,
+                            spreadRadius: 2,
+                            color: AppColors.accent.withValues(alpha: 0.45),
+                          ),
+                          const BoxShadow(
+                            blurRadius: 24,
+                            color: Color(0x80000000),
+                            offset: Offset(0, 14),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset('assets/images/logo.png'),
                     ),
-                    child: Image.asset('assets/images/logo.png'),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               SlideTransition(
                 position: _textSlide,
                 child: Shine(
                   delay: const Duration(milliseconds: 150),
-                  child: const BrandWordmark(height: 34),
+                  child: const BrandWordmark(height: 36),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.xs),
               SlideTransition(
                 position: _textSlide,
-                child: const Text(
+                child: Text(
                   'ទូរស័ព្ទថ្មី និងមួយទឹក • តម្លៃល្អ',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ),
-              const SizedBox(height: 28),
-              _productList(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // "ផលិតផលរបស់យើង" and a pill for each product, each fading and rising in turn
-  Widget _productList() {
-    final count = SplashScreen.products.length;
-    return SizedBox(
-      width: 300,
-      child: Column(
-        children: [
-          FadeTransition(
-            opacity: CurvedAnimation(
-              parent: _products,
-              curve: const Interval(0, 0.3),
-            ),
-            child: const Text(
-              'ផលិតផលរបស់យើង',
-              style: TextStyle(
-                color: Color(0xFFFBBF24),
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (var i = 0; i < count; i++)
-                _productPill(
-                  SplashScreen.products[i],
-                  CurvedAnimation(
-                    parent: _products,
-                    curve: Interval(
-                      0.1 + 0.8 * i / count,
-                      (0.1 + 0.8 * (i + 1) / count).clamp(0, 1),
-                      curve: Curves.easeOutCubic,
-                    ),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 15,
+                    letterSpacing: 0.2,
                   ),
                 ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _productPill(String name, Animation<double> appear) {
-    return FadeTransition(
-      opacity: appear,
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.6),
-          end: Offset.zero,
-        ).animate(appear),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                name == 'iPad' ? Icons.tablet_mac : Icons.smartphone,
-                size: 14,
-                color: Colors.white70,
               ),
-              const SizedBox(width: 5),
-              Text(
-                name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: AppSpacing.xxl),
+              FadeTransition(
+                opacity: CurvedAnimation(
+                  parent: _products,
+                  curve: Curves.easeOut,
                 ),
+                child: const _BrandMarquee(),
               ),
             ],
           ),
@@ -351,6 +316,131 @@ class _SplashScreenState extends State<SplashScreen>
             child: _logo(),
           ),
       ],
+    );
+  }
+}
+
+// The brands the shop sells, as their real logos in soft white, drifting
+// slowly sideways and fading out at both edges. Plain marks, not buttons:
+// nothing here looks tappable. Still (and centred) when animations are off.
+class _BrandMarquee extends StatefulWidget {
+  const _BrandMarquee();
+
+  static const _logos = [
+    // The files are square icons; wordmarks are a thin strip across the
+    // middle, so they get a bigger square to look as big as the symbols
+    ('assets/images/brands/apple.svg', 22.0),
+    ('assets/images/brands/samsung.svg', 64.0),
+    ('assets/images/brands/oppo.svg', 50.0),
+    ('assets/images/brands/honor.svg', 58.0),
+    ('assets/images/brands/vivo.svg', 46.0),
+    ('assets/images/brands/xiaomi.svg', 22.0),
+  ];
+
+  @override
+  State<_BrandMarquee> createState() => _BrandMarqueeState();
+}
+
+class _BrandMarqueeState extends State<_BrandMarquee>
+    with SingleTickerProviderStateMixin {
+  static const _gap = 28.0;
+  static const _width = 280.0;
+
+  late final AnimationController _drift;
+
+  @override
+  void initState() {
+    super.initState();
+    _drift = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 9),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Motion.loops(context)) {
+      if (!_drift.isAnimating) _drift.repeat();
+    } else {
+      _drift.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _drift.dispose();
+    super.dispose();
+  }
+
+  Widget _row() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (final (asset, width) in _BrandMarquee._logos)
+        Padding(
+          padding: const EdgeInsets.only(right: _gap),
+          child: SvgPicture.asset(
+            asset,
+            width: width,
+            height: width,
+            colorFilter: ColorFilter.mode(
+              Colors.white.withValues(alpha: 0.6),
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    // One full set of logos, end to end
+    final setWidth = _BrandMarquee._logos.fold<double>(
+      0,
+      (sum, logo) => sum + logo.$2 + _gap,
+    );
+    return Semantics(
+      label: 'Apple, Samsung, OPPO, HONOR, vivo, Xiaomi',
+      child: SizedBox(
+        width: _width,
+        height: 32,
+        child: ShaderMask(
+          // Soft edges: logos fade in on the right and out on the left
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (r) => const LinearGradient(
+            colors: [
+              Colors.transparent,
+              Colors.white,
+              Colors.white,
+              Colors.transparent,
+            ],
+            stops: [0, 0.18, 0.82, 1],
+          ).createShader(r),
+          child: ClipRect(
+            child: AnimatedBuilder(
+              animation: _drift,
+              builder: (context, child) => OverflowBox(
+                alignment: Alignment.centerLeft,
+                maxWidth: double.infinity,
+                child: Transform.translate(
+                  offset: Offset(
+                    Motion.loops(context)
+                        ? -_drift.value * setWidth
+                        : (_width - setWidth) / 2,
+                    0,
+                  ),
+                  child: child,
+                ),
+              ),
+              // Two sets back to back, so the row never runs out
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [_row(), _row()],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

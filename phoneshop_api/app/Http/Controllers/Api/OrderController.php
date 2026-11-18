@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Bakong\BakongUnavailable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,6 +15,7 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
+        Order::expireUnpaid(); // free stock held by orders nobody paid for
         // Not the cancelled ones the customer removed from their list
         return $request->user()->orders()->whereNull('customer_hidden_at')
             ->with(['items.product', 'trackings'])->latest()->get();
@@ -21,6 +23,7 @@ class OrderController extends Controller
 
     public function show(Request $request, Order $order)
     {
+        Order::expireUnpaid(); // free stock held by orders nobody paid for
         abort_unless($order->isOwnedBy($request), 404);
 
         return $order->load(['items.product', 'trackings']);
@@ -123,6 +126,9 @@ class OrderController extends Controller
             return $order;
         });
 
+        // Its own QR with the amount in it, when Bakong is set up
+        $order->attachBakongQr();
+
         // fresh() so the database defaults (status, payment_status) are included
         return $order->fresh(['items.product', 'trackings']);
     }
@@ -147,6 +153,26 @@ class OrderController extends Controller
         ]);
 
         return $order->load(['items.product', 'trackings']);
+    }
+
+    // The payment page asks this every few seconds while the customer pays:
+    // the server checks with Bakong and the order comes back marked paid once
+    // the money has arrived. "bakong_down" tells the app Bakong couldn't answer.
+    public function checkPayment(Request $request, Order $order)
+    {
+        abort_unless($order->isOwnedBy($request), 404);
+
+        $down = false;
+        try {
+            $order->checkBakong();
+        } catch (BakongUnavailable) {
+            $down = true;
+        }
+
+        return [
+            ...$order->fresh(['items.product', 'trackings'])->toArray(),
+            'bakong_down' => $down,
+        ];
     }
 
     // The customer confirms the parcel arrived, so the admin doesn't have to find out elsewhere

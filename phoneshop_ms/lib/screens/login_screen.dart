@@ -2,15 +2,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/user.dart';
-import '../services/api_service.dart';
-import '../services/google_auth.dart';
-import '../services/language.dart';
-import '../widgets/auth_ui.dart';
-import '../widgets/common.dart';
-import '../widgets/google_web_button_stub.dart'
-    if (dart.library.js_interop) '../widgets/google_web_button_web.dart';
+import '../data/models/user.dart';
+import '../data/api_service.dart';
+import '../data/google_auth.dart';
+import '../hooks/language.dart';
+import '../components/auth_ui.dart';
+import '../components/common.dart';
+import '../components/google_web_button_stub.dart'
+    if (dart.library.js_interop) '../components/google_web_button_web.dart';
 import 'admin/admin_home_screen.dart';
+import '../theme/theme.dart';
 import 'register_screen.dart';
 
 // Call before anything that needs an account: buying needs one, browsing doesn't.
@@ -296,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Text(tr('Forgot password?'), style: TextStyle(fontSize: 15)),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xxs),
         AuthButton(
           text: tr('Sign In'),
           loading: _isLoading,

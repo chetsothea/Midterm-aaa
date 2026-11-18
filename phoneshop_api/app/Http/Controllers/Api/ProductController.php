@@ -4,14 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\PaymentAccount;
+use App\Services\Bakong\Bakong;
+use App\Models\OrderItem;
 use App\Models\Product;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::query()->latest();
+        Order::expireUnpaid(); // free stock held by orders nobody paid for
+        // Each phone carries its star average and number of reviews
+        $query = Product::query()->withRating()->latest();
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -31,9 +38,43 @@ class ProductController extends Controller
         return $query->get();
     }
 
+    // The phones customers buy most (units in orders that weren't cancelled),
+    // for the store's top carousel. Each has a "sold" count. Topped up with
+    // the priciest phones in stock (sold = 0) while there are few sales, so
+    // the carousel is never empty. Only phones in stock.
+    public function bestSellers()
+    {
+        $limit = 6;
+        $sold = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.status', '!=', 'cancelled')
+            ->whereNotNull('order_items.product_id')
+            ->groupBy('order_items.product_id')
+            ->orderByDesc('units')
+            ->pluck(DB::raw('SUM(order_items.qty) AS units'), 'order_items.product_id');
+
+        $top = Product::withRating()->whereIn('id', $sold->keys())->where('stock', '>', 0)->get()
+            ->sortByDesc(fn ($p) => [$sold[$p->id], $p->price])
+            ->take($limit)
+            ->each(fn ($p) => $p->setAttribute('sold', (int) $sold[$p->id]))
+            ->values();
+
+        if ($top->count() < $limit) {
+            $more = Product::withRating()->where('stock', '>', 0)
+                ->whereNotIn('id', $top->pluck('id'))
+                ->orderByDesc('price')
+                ->limit($limit - $top->count())
+                ->get()
+                ->each(fn ($p) => $p->setAttribute('sold', 0));
+            $top = $top->concat($more)->values();
+        }
+
+        return $top;
+    }
+
     public function show(Product $product)
     {
-        return $product;
+        return Product::withRating()->find($product->id);
     }
 
     public function categories()
@@ -62,17 +103,12 @@ class ProductController extends Controller
         ];
     }
 
+    // The banks a customer can pay into. The first one is also given at the
+    // top level, as older app versions read only bank_name, account_number...
     public function paymentInfo()
     {
-        $info = config('shop.payment');
-        $qr = $info['qr_image_url'] ?? '';
+        $accounts = PaymentAccount::forCustomers();
 
-        // A plain file name means public/uploads/<name>; build the URL from the
-        // request host so it works on the emulator (10.0.2.2) and in Chrome alike
-        if ($qr !== '' && ! str_starts_with($qr, 'http')) {
-            $info['qr_image_url'] = url('uploads/'.$qr);
-        }
-
-        return $info;
+        return [...$accounts[0], 'accounts' => $accounts, 'bakong' => Bakong::enabled()];
     }
 }

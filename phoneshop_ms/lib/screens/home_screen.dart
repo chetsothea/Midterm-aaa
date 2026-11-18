@@ -1,23 +1,37 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/phone.dart';
-import '../services/api_service.dart';
-import '../services/cart.dart';
-import '../widgets/banner_carousel.dart';
-import '../widgets/motion.dart';
-import '../widgets/brand_row.dart';
-import '../widgets/common.dart';
-import '../widgets/language_switch.dart';
-import '../widgets/product_card.dart';
-import '../widgets/store_menu.dart';
+import '../data/models/phone.dart';
+import '../data/api_service.dart';
+import '../hooks/cart.dart';
+import '../components/banner_carousel.dart';
+import '../components/motion.dart';
+import '../components/brand_row.dart';
+import '../components/common.dart';
+import '../components/language_switch.dart';
+import '../components/product_card.dart';
+import '../components/store_menu.dart';
 import 'account_screen.dart';
 import 'cart_screen.dart';
 import 'favorites_view.dart';
 import 'login_screen.dart';
 import 'my_orders_screen.dart';
 import 'product_detail_screen.dart';
-import '../services/language.dart';
-import '../widgets/brand_wordmark.dart';
+import '../hooks/language.dart';
+import '../components/brand_wordmark.dart';
+import '../components/ux.dart';
+import '../components/live_banner.dart';
+import '../data/models/live.dart';
+import 'live_shopping_screen.dart';
+import '../components/hero_phone.dart';
+import '../components/product_filter.dart';
+import 'compare_screen.dart';
+import '../components/theme_toggle.dart';
+import '../hooks/live.dart';
+import '../components/effects.dart';
+import '../components/category_tiles.dart';
+import '../components/shop_refresh.dart';
+import '../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,17 +53,25 @@ class _HomeScreenState extends State<HomeScreen> {
   String _search = '';
   bool _searching = false; // the search field replaces the logo in the top bar
   final _searchField = TextEditingController();
+  final _scroll = ScrollController(); // for the back-to-top button and parallax
+  Timer? _refreshTimer; // quietly re-reads prices and stock every few seconds
   StoreFilter _filter = StoreFilter.home;
+  ProductFilter _productFilter = ProductFilter.none; // brand / price / storage
+  LiveSession _live = LiveSession.off; // the seller's live stream, when on
+  List<(Phone, int)> _bestSellers = []; // the carousel at the top
 
   @override
   void initState() {
     super.initState();
     _load();
+    _refreshTimer = Live.poll(() => context, _refreshQuietly);
   }
 
   @override
   void dispose() {
     _searchField.dispose();
+    _scroll.dispose();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -72,12 +94,41 @@ class _HomeScreenState extends State<HomeScreen> {
       categoryId: _filter.categoryId,
     );
     _loadActiveOrders();
+    _loadLive();
+    _loadBestSellers();
     // Reload the menu too, so brands/categories the admin just added show up
     ApiService.fetchMenu()
         .then((menu) {
           if (mounted) setState(() => _menu = menu);
         })
         .catchError((_) {});
+  }
+
+  // The best-selling phones for the carousel at the top
+  void _loadBestSellers() {
+    ApiService.fetchBestSellers()
+        .then((list) {
+          if (mounted) setState(() => _bestSellers = list);
+        })
+        .catchError((_) {});
+  }
+
+  // Whether the seller is live right now (shows the LIVE card on top)
+  void _loadLive() {
+    ApiService.fetchLive()
+        .then((live) {
+          if (mounted) setState(() => _live = live);
+        })
+        .catchError((_) {});
+  }
+
+  void _openLive() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => LiveShoppingScreen(session: _live)),
+    );
+    _loadLive();
+    _refresh(); // stock may have changed after buying in the live
   }
 
   // How many of the customer's orders are still on their way (0 for guests)
@@ -100,12 +151,37 @@ class _HomeScreenState extends State<HomeScreen> {
         .catchError((_) {});
   }
 
+  // A background refresh: the page stays as it is (no skeleton, no jump) and
+  // only the numbers that changed roll to their new value
+  Future<void> _refreshQuietly() async {
+    try {
+      final phones = await ApiService.fetchPhones(
+        search: _search,
+        brand: _filter.brand,
+        categoryId: _filter.categoryId,
+      );
+      if (mounted) setState(() => _phones = Future.value(phones));
+      _loadLive();
+    } catch (_) {
+      // Offline for a moment: keep what is on screen
+    }
+  }
+
   Future<void> _refresh() async {
     setState(_load);
     await _phones;
   }
 
+  // From an empty search / filter back to the whole store
+  void _showEverything() {
+    _searchField.clear();
+    _searching = false;
+    _search = '';
+    _select(StoreFilter.home);
+  }
+
   void _select(StoreFilter filter) {
+    Haptics.tap();
     _filter = filter;
     _refresh();
   }
@@ -182,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final user = ApiService.currentUser;
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5FB),
+      backgroundColor: AppColors.page,
       // The page runs on under the floating bottom menu, so its glass has something to blur
       extendBody: true,
       drawer: StoreDrawer(menu: _menu, current: _filter, onSelected: _select),
@@ -194,19 +270,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         backgroundColor: Colors.transparent,
         // Navy to teal, the colours of the shop's logo
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
+        // Navy, teal and indigo light drifting behind the logo (GPU blur)
+        flexibleSpace: DecoratedBox(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
-            gradient: LinearGradient(
-              colors: [Color(0xFF0F2A5F), Color(0xFF0E7490)],
-            ),
             boxShadow: [
               BoxShadow(
                 blurRadius: 14,
-                color: Color(0x330F2A5F),
+                color: AppColors.shadow,
                 offset: Offset(0, 4),
               ),
             ],
+          ),
+          child: AuroraBackground(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
           ),
         ),
         // ☰ next to the shop name; gold while a category or brand is selected
@@ -252,6 +329,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
         actions: [
+          // ☀️ / 🌙: dark or light mode, first, so 🔍 ♥ 🌐 stay side by side
+          if (!_searching) const ThemeToggleButton(),
           IconButton(
             tooltip: _searching ? 'Close search' : 'Search',
             icon: Icon(_searching ? Icons.close : Icons.search),
@@ -261,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Last, at the right edge
           if (!_searching) const LanguageButton(),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
         ],
       ),
       bottomNavigationBar: StoreMenuBar(
@@ -274,11 +353,15 @@ class _HomeScreenState extends State<HomeScreen> {
         onCart: _openCart,
         activeOrders: _activeOrders,
       ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 76), // clear of the bottom menu
+        child: BackToTop(controller: _scroll),
+      ),
       body: Column(
         children: [
           if (_filter.label.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: InputChip(
@@ -291,12 +374,47 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FutureBuilder<List<Phone>>(
               future: _phones,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                // Skeleton cards where the real ones will land
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const StoreSkeleton();
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return StatusView(
+                    icon: Icons.wifi_off_rounded,
+                    error: true,
+                    title: trf(
+                      'មិនអាចភ្ជាប់ទៅហាងបានទេ',
+                      "Can't reach the shop",
+                    ),
+                    message: trf(
+                      'សូមពិនិត្យអ៊ីនធឺណិត ហើយព្យាយាមម្តងទៀត',
+                      'Check your internet and try again',
+                    ),
+                    actionLabel: trf('ព្យាយាមម្តងទៀត', 'Try again'),
+                    onAction: _refresh,
+                  );
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text(tr('មិនមានទិន្នន័យទូរស័ព្ទទេ')));
+                  final filtered =
+                      _search.isNotEmpty || _filter != StoreFilter.home;
+                  return StatusView(
+                    icon: filtered
+                        ? Icons.search_off_rounded
+                        : Icons.phone_iphone_rounded,
+                    title: tr('មិនមានទិន្នន័យទូរស័ព្ទទេ'),
+                    message: filtered
+                        ? trf(
+                            'សាកស្វែងរកពាក្យផ្សេង ឬមើលទូរស័ព្ទទាំងអស់',
+                            'Try another word, or see every phone',
+                          )
+                        : null,
+                    actionLabel: filtered
+                        ? trf('មើលទាំងអស់', 'See all phones')
+                        : trf('ផ្ទុកឡើងវិញ', 'Reload'),
+                    actionIcon: filtered
+                        ? Icons.apps_rounded
+                        : Icons.refresh_rounded,
+                    onAction: filtered ? _showEverything : _refresh,
+                  );
                 }
 
                 final all = snapshot.data!;
@@ -310,16 +428,77 @@ class _HomeScreenState extends State<HomeScreen> {
                     _filter == StoreFilter.home && _search.isEmpty;
                 final brands = List<String>.from(_menu?['brands'] ?? []);
                 final deals = onSale.where((p) => p.stock > 0).toList();
-                return RefreshIndicator(
+                // Newest first (the highest id was added last), in stock only.
+                // Only for a bigger shop: with a handful of phones the row would
+                // just repeat the grid below it.
+                final newArrivals = all.length < 8
+                    ? <Phone>[]
+                    : (all.where((p) => p.stock > 0).toList()
+                            ..sort((a, b) => b.id.compareTo(a.id)))
+                          .take(8)
+                          .toList();
+                // Best sellers from the API; until they arrive (or if that
+                // fails) the priciest phone in stock on its own
+                final flagship = HeroPhoneCard.pickFlagship(all);
+                final heroPhones = _bestSellers.isNotEmpty
+                    ? _bestSellers
+                    : [if (flagship != null) (flagship, 0)];
+                // The grid after the brand / price / storage filter
+                final shown = _productFilter.apply(phones);
+                return ShopRefresh(
                   onRefresh: _refresh,
                   child: CustomScrollView(
+                    controller: _scroll,
                     slivers: [
+                      // The seller is live: the first thing on the page
+                      if (onMainPage && _live.isLive)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                            child: PopIn(
+                              child: LiveNowCard(
+                                session: _live,
+                                onJoin: _openLive,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // The best sellers, sliding by, each turning in 3D
+                      if (onMainPage && heroPhones.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Entrance(
+                              child: HeroCarousel(
+                                phones: heroPhones,
+                                onOpen: (phone) => _openDetail(phone, 'hero'),
+                              ),
+                            ),
+                          ),
+                        ),
                       // Only on the main page: filtered results stay at the top
                       if (onMainPage)
-                        const SliverToBoxAdapter(
+                        SliverToBoxAdapter(
                           child: Padding(
-                            padding: EdgeInsets.fromLTRB(12, 10, 12, 0),
-                            child: BannerCarousel(images: _banners),
+                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                            child: _Parallax(
+                              controller: _scroll,
+                              child: const BannerCarousel(images: _banners),
+                            ),
+                          ),
+                        ),
+                      // Rounded category shortcuts, like the side menu's list
+                      if (onMainPage)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: CategoryTiles(
+                              categories: List<Map<String, dynamic>>.from(
+                                _menu?['categories'] ?? [],
+                              ),
+                              hasDeals: deals.isNotEmpty,
+                              onSelected: _select,
+                            ),
                           ),
                         ),
                       if (onMainPage && brands.isNotEmpty)
@@ -336,17 +515,34 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       // The deals sit on a warm band of their own, so the sale
                       // stands out from the plain list further down
+                      if (onMainPage && newArrivals.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Column(
+                            children: [
+                              _sectionTitle(
+                                trf('ទើបមកដល់', 'New arrivals'),
+                                icon: Icons.auto_awesome_rounded,
+                              ),
+                              _cardRow(newArrivals, 'new'),
+                            ],
+                          ),
+                        ),
                       if (onMainPage && deals.isNotEmpty)
                         SliverToBoxAdapter(
                           child: Container(
                             margin: const EdgeInsets.fromLTRB(8, 10, 8, 0),
                             padding: const EdgeInsets.only(bottom: 4),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              gradient: const LinearGradient(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.xxl,
+                              ),
+                              gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [Color(0xFFFFF1E6), Color(0xFFFDE7EF)],
+                                colors: [
+                                  AppColors.surface,
+                                  AppColors.tileLower,
+                                ],
                               ),
                             ),
                             child: Column(
@@ -369,10 +565,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     itemCount: deals.length,
                                     separatorBuilder: (_, _) =>
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: AppSpacing.sm),
                                     itemBuilder: (context, index) => SizedBox(
                                       width: 170,
-                                      child: _cardFor(deals[index], 'deals'),
+                                      child: PopIn(
+                                        index: index,
+                                        child: Tilt3D(
+                                          child: _cardFor(
+                                            deals[index],
+                                            'deals',
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -386,11 +590,56 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? tr('POPULAR PRODUCTS')
                               : _filter.label.toUpperCase(),
                           icon: Icons.grid_view_rounded,
-                          count: phones.length,
+                          count: shown.length,
+                          live: true, // prices and stock refresh by themselves
+                          trailing: [
+                            IconButton(
+                              tooltip: trf('ប្រៀបធៀប', 'Compare'),
+                              icon: const Icon(Icons.compare_arrows_rounded),
+                              color: AppColors.textSoft,
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CompareScreen(phones: all),
+                                ),
+                              ),
+                            ),
+                            FilterButton(
+                              filter: _productFilter,
+                              onPressed: () async {
+                                final picked = await showProductFilter(
+                                  context,
+                                  phones: phones,
+                                  current: _productFilter,
+                                );
+                                if (picked != null && mounted) {
+                                  setState(() => _productFilter = picked);
+                                }
+                              },
+                            ),
+                          ],
                         ),
                       ),
+                      if (shown.isEmpty && _productFilter.isActive)
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 320,
+                            child: StatusView(
+                              icon: Icons.tune_rounded,
+                              title: trf(
+                                'គ្មានទូរស័ព្ទត្រូវនឹងតម្រង',
+                                'No phones match the filter',
+                              ),
+                              actionLabel: trf('សម្អាតតម្រង', 'Clear filter'),
+                              actionIcon: Icons.close_rounded,
+                              onAction: () => setState(
+                                () => _productFilter = ProductFilter.none,
+                              ),
+                            ),
+                          ),
+                        ),
                       SliverPadding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
                         sliver: SliverGrid.builder(
                           gridDelegate:
                               const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -400,10 +649,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
                               ),
-                          itemCount: phones.length,
+                          itemCount: shown.length,
                           itemBuilder: (context, index) => Entrance(
                             index: index,
-                            child: _cardFor(phones[index], 'list'),
+                            child: Tilt3D(
+                              child: _cardFor(shown[index], 'list'),
+                            ),
                           ),
                         ),
                       ),
@@ -430,6 +681,8 @@ class _HomeScreenState extends State<HomeScreen> {
     IconData? icon,
     VoidCallback? onSeeAll,
     int? count, // how many phones the section holds, shown after the title
+    bool live = false, // a pulsing "LIVE" on the right
+    List<Widget> trailing = const [], // buttons at the right end
   }) {
     final row = Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
@@ -443,14 +696,14 @@ class _HomeScreenState extends State<HomeScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFF97316), Color(0xFFE11D48)],
+                colors: [Color(0xFF3D7BFF), Color(0xFFFF453A)],
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           if (icon != null) ...[
-            Icon(icon, color: const Color(0xFFE11D48), size: 22),
-            const SizedBox(width: 4),
+            PopIn(child: Icon(icon, color: const Color(0xFFFF453A), size: 22)),
+            const SizedBox(width: AppSpacing.xxs),
           ],
           // Always one line: shrinks a little on a narrow phone instead of
           // breaking a Khmer word across two lines
@@ -458,43 +711,50 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(
+              // Flips up into view, then a gleam runs across it now and then
+              child: MotionTitle(
                 title,
-                maxLines: 1,
+                key: ValueKey(title),
+                // Big, bold, tight: the Apple Store way of heading a section
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F2A5F),
+                  letterSpacing: -0.4,
                 ),
               ),
             ),
           ),
           if (count != null) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: 2,
+              ),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F2A5F).withValues(alpha: 0.08),
+                color: AppColors.text.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
+              child: RollingText(
                 '$count',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F2A5F),
+                  color: AppColors.text,
                 ),
               ),
             ),
           ],
           const Spacer(),
+          if (live && onSeeAll == null) const LiveDot(),
+          ...trailing,
           // A small tinted pill, so it reads as a button
           if (onSeeAll != null)
             Container(
               padding: const EdgeInsets.fromLTRB(10, 3, 4, 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF0E7490).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF3D7BFF).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -502,7 +762,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     tr('មើលទាំងអស់'),
                     style: const TextStyle(
-                      color: Color(0xFF0E7490),
+                      color: Color(0xFF3D7BFF),
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -510,7 +770,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(
                     Icons.chevron_right,
                     size: 18,
-                    color: Color(0xFF0E7490),
+                    color: Color(0xFF3D7BFF),
                   ),
                 ],
               ),
@@ -521,18 +781,43 @@ class _HomeScreenState extends State<HomeScreen> {
     return onSeeAll == null ? row : InkWell(onTap: onSeeAll, child: row);
   }
 
+  // A sideways row of cards (New arrivals)
+  Widget _cardRow(List<Phone> phones, String section) {
+    return SizedBox(
+      height: 352, // a card, plus room for its shadow
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+        itemCount: phones.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) => SizedBox(
+          width: 170,
+          child: PopIn(
+            index: index,
+            child: Tilt3D(child: _cardFor(phones[index], section)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openDetail(Phone phone, String section) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(
+          phone: phone,
+          heroTag: 'phone-$section-${phone.id}',
+        ),
+      ),
+    );
+    _refresh();
+  }
+
   // [section] keeps the picture's Hero tag unique: a phone on sale is in both rows
   Widget _cardFor(Phone phone, String section) {
     final heroTag = 'phone-$section-${phone.id}';
-    Future<void> openDetail() async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ProductDetailScreen(phone: phone, heroTag: heroTag),
-        ),
-      );
-      _refresh();
-    }
+    Future<void> openDetail() => _openDetail(phone, section);
 
     return ProductCard(
       phone: phone,
@@ -562,6 +847,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
               : tr('ស្តុកមិនគ្រប់គ្រាន់'),
           error: !ok,
+        );
+        ok ? Haptics.success() : Haptics.warning();
+      },
+    );
+  }
+}
+
+// The banner drifts down slower than the page and fades a little as it
+// scrolls away, so it feels further back than the cards (parallax).
+class _Parallax extends StatelessWidget {
+  final ScrollController controller;
+  final Widget child;
+
+  const _Parallax({required this.controller, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (Motion.off(context)) return child;
+    return ListenableBuilder(
+      listenable: controller,
+      child: child,
+      builder: (context, child) {
+        final offset = controller.hasClients
+            ? controller.offset.clamp(0.0, 300.0)
+            : 0.0;
+        return Transform.translate(
+          offset: Offset(0, offset * 0.45),
+          child: Transform.scale(
+            scale: 1 - offset / 3000,
+            child: Opacity(opacity: 1 - offset / 600, child: child),
+          ),
         );
       },
     );

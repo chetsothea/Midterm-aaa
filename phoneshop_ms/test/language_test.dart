@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/main.dart';
 import 'package:phoneshop_ms/screens/login_screen.dart';
-import 'package:phoneshop_ms/services/language.dart';
+import 'package:phoneshop_ms/hooks/language.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/models/user.dart';
-import 'package:phoneshop_ms/widgets/common.dart';
-import 'package:phoneshop_ms/widgets/store_menu.dart';
+import 'package:phoneshop_ms/data/models/user.dart';
+import 'package:phoneshop_ms/components/common.dart';
+import 'package:phoneshop_ms/components/store_menu.dart';
 
 void main() {
   Future<void> pumpMenu(WidgetTester tester, User? user) => tester.pumpWidget(

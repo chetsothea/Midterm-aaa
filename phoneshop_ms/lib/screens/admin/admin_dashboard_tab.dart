@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../models/order.dart';
-import '../../services/api_service.dart';
-import '../../widgets/common.dart';
-import '../../widgets/dashboard_charts.dart';
+import '../../data/models/order.dart';
+import '../../data/api_service.dart';
+import '../../components/common.dart';
+import '../../components/dashboard_charts.dart';
 import 'admin_customers_screen.dart';
 import 'admin_orders_tab.dart';
+import '../../components/ux.dart';
+import '../../components/shop_refresh.dart';
+import '../../hooks/language.dart';
+import '../../theme/app_theme.dart';
 
 // The shop at a glance, top to bottom in order of urgency:
 // money in, what needs doing now, the totals, then the charts.
@@ -19,11 +23,11 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   late Future<Map<String, dynamic>> _stats = _load();
   DateTime _loadedAt = DateTime.now();
 
-  static const _navy = Color(0xFF0F2A5F);
-  static const _teal = Color(0xFF0E7490);
+  static Color get _navy => AppColors.text;
+  static const _teal = Color(0xFF3D7BFF);
   static const _gold = Color(0xFFFBBF24);
-  static const _green = Color(0xFF16A34A);
-  static const _muted = Color(0xFF64748B);
+  static const _green = Color(0xFF30D158);
+  static Color get _muted => AppColors.muted;
 
   Future<Map<String, dynamic>> _load() async {
     final stats = await ApiService.fetchDashboard();
@@ -40,9 +44,9 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   }
 
   // White card with a soft shadow, the same as the order cards
-  static final _cardDecoration = BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16),
+  static BoxDecoration get _cardDecoration => BoxDecoration(
+    color: AppColors.glass,
+    borderRadius: BorderRadius.circular(AppRadius.lg),
     boxShadow: const [
       BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 2)),
     ],
@@ -64,15 +68,15 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFF97316), Color(0xFFE11D48)],
+                colors: [Color(0xFF3D7BFF), Color(0xFFFF453A)],
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: _navy,
@@ -80,7 +84,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             ),
           ),
           if (trailing != null)
-            Text(trailing, style: const TextStyle(color: _muted, fontSize: 12)),
+            Text(trailing, style: TextStyle(color: _muted, fontSize: 12)),
         ],
       ),
     );
@@ -106,10 +110,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   // ---------- money in ----------
 
   // Paid revenue in big letters, a small 7-day trend, today against yesterday
-  Widget _revenue(
-    double revenue,
-    List<({DateTime date, double total})> days,
-  ) {
+  Widget _revenue(double revenue, List<({DateTime date, double total})> days) {
     final today = days.isEmpty ? 0.0 : days.last.total;
     final yesterday = days.length < 2 ? 0.0 : days[days.length - 2].total;
     final week = days.fold<double>(0, (sum, d) => sum + d.total);
@@ -117,10 +118,13 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     Widget small(String label, double value) {
       return Expanded(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: AppSpacing.xs,
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,17 +153,17 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [_navy, _teal],
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x330F2A5F),
+            color: AppColors.shadow,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -193,12 +197,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xxs),
                     _change(today, yesterday),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
               _Sparkline(values: [for (final d in days) d.total]),
             ],
           ),
@@ -206,7 +210,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
           Row(
             children: [
               small('ថ្ងៃនេះ', today),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.xs),
               small('៧ ថ្ងៃចុងក្រោយ', week),
             ],
           ),
@@ -232,16 +236,19 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       color = up ? _gold : const Color(0xFFFCA5A5);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 15, color: color),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xxs),
           Flexible(
             child: Text(
               text,
@@ -283,7 +290,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
           ),
           title: Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.w700, color: _navy),
+            style: TextStyle(fontWeight: FontWeight.w700, color: _navy),
           ),
           subtitle: Text(
             subtitle,
@@ -304,7 +311,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     return [
       if (pending > 0)
         _task(
-          color: const Color(0xFFEA8A00),
+          color: const Color(0xFF2F62D9),
           icon: Icons.hourglass_top,
           title: 'Order ថ្មីរង់ចាំបញ្ជាក់',
           subtitle: '$pending Order',
@@ -355,7 +362,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       // Delivered but not paid: only shown while there is money to collect
       if (unpaid > 0)
         _task(
-          color: const Color(0xFFDC2626),
+          color: const Color(0xFFFF453A),
           icon: Icons.warning_amber_rounded,
           title: 'បានទទួលហើយ តែមិនទាន់បង់',
           subtitle:
@@ -380,8 +387,8 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             backgroundColor: _green.withValues(alpha: 0.12),
             child: const Icon(Icons.check_circle_outline, color: _green),
           ),
-          const SizedBox(width: 12),
-          const Expanded(
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -419,7 +426,10 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
             child: Row(
               children: [
                 Container(
@@ -427,7 +437,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                   height: 42,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Icon(icon, color: color, size: 22),
                 ),
@@ -445,7 +455,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                         child: Text(
                           value,
                           maxLines: 1,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: _navy,
@@ -458,7 +468,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                         child: Text(
                           label,
                           maxLines: 1,
-                          style: const TextStyle(color: _muted, fontSize: 13),
+                          style: TextStyle(color: _muted, fontSize: 13),
                         ),
                       ),
                     ],
@@ -480,26 +490,15 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       future: _stats,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const ListSkeleton();
         } else if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.cloud_off, size: 48, color: _muted),
-                  const SizedBox(height: 8),
-                  Text('Error: ${snapshot.error}', textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: _refresh,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('ព្យាយាមម្តងទៀត'),
-                  ),
-                ],
-              ),
-            ),
+          return StatusView(
+            icon: Icons.wifi_off_rounded,
+            error: true,
+            title: trf('មិនអាចភ្ជាប់ទៅហាងបានទេ', "Can't reach the shop"),
+            message: '${snapshot.error}',
+            actionLabel: trf('ព្យាយាមម្តងទៀត', 'Try again'),
+            onAction: _refresh,
           );
         }
         final s = snapshot.data!;
@@ -523,7 +522,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             'ស្តុកជិតអស់ (≤$threshold)',
             '$lowStock',
             Icons.inventory_2_outlined,
-            lowStock > 0 ? const Color(0xFFDC2626) : _muted,
+            lowStock > 0 ? const Color(0xFFFF453A) : _muted,
           ),
           _tile(
             'អតិថិជន',
@@ -561,8 +560,8 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         final tasks = _tasks(s);
 
         return ColoredBox(
-          color: const Color(0xFFF1F5F9),
-          child: RefreshIndicator(
+          color: AppColors.page,
+          child: ShopRefresh(
             onRefresh: _refresh,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
@@ -572,12 +571,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                   padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
                   child: Row(
                     children: [
-                      const Icon(Icons.schedule, size: 15, color: _muted),
-                      const SizedBox(width: 4),
+                      Icon(Icons.schedule, size: 15, color: _muted),
+                      const SizedBox(width: AppSpacing.xxs),
                       Expanded(
                         child: Text(
                           'ធ្វើបច្ចុប្បន្នភាព ${_two(_loadedAt.hour)}:${_two(_loadedAt.minute)} • ទាញចុះក្រោមដើម្បីផ្ទុកថ្មី',
-                          style: const TextStyle(color: _muted, fontSize: 12),
+                          style: TextStyle(color: _muted, fontSize: 12),
                         ),
                       ),
                     ],
@@ -641,7 +640,7 @@ class _Sparkline extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             for (var i = 0; i < values.length; i++) ...[
-              if (i > 0) const SizedBox(width: 4),
+              if (i > 0) const SizedBox(width: AppSpacing.xxs),
               Expanded(
                 child: Container(
                   height: most <= 0 ? 4 : 4 + 52 * values[i] / most,

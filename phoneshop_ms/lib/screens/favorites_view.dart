@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
-import '../models/phone.dart';
-import '../services/api_service.dart';
-import '../services/cart.dart';
-import '../services/favorites.dart';
-import '../services/language.dart';
-import '../widgets/common.dart';
-import '../widgets/product_card.dart';
+import '../data/models/phone.dart';
+import '../data/api_service.dart';
+import '../hooks/cart.dart';
+import '../hooks/favorites.dart';
+import '../hooks/language.dart';
+import '../components/common.dart';
+import '../components/product_card.dart';
 import 'login_screen.dart';
+import '../components/ux.dart';
+import '../components/motion.dart';
 import 'product_detail_screen.dart';
+import '../components/shop_refresh.dart';
+import '../theme/app_theme.dart';
 
-const _navy = Color(0xFF0F2A5F);
-const _muted = Color(0xFF64748B);
-const _red = Color(0xFFE11D48);
-const _orange = Color(0xFFF97316);
+Color get _navy => AppColors.text;
+Color get _muted => AppColors.muted;
+const _red = Color(0xFFFF453A);
+const _orange = Color(0xFF3D7BFF);
 
 // Its own page, opened from ♡ in the top bar
 class FavoritesScreen extends StatelessWidget {
@@ -21,7 +25,7 @@ class FavoritesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: AppBar(title: Text(tr('ចូលចិត្ត'))),
       body: const FavoritesView(),
     );
@@ -47,51 +51,16 @@ class _FavoritesViewState extends State<FavoritesView> {
   }
 
   Widget _empty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFFE4E6), Color(0xFFEDE9FE)],
-                ),
-              ),
-              child: const Icon(Icons.favorite_border, size: 52, color: _red),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              tr('មិនទាន់មានទូរស័ព្ទដែលអ្នកចូលចិត្តទេ'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: _navy,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              tr('ចុច ♥ លើទូរស័ព្ទ ដើម្បីរក្សាទុកនៅទីនេះ'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: _muted, fontSize: 12),
-            ),
-            if (Navigator.canPop(context)) ...[
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                onPressed: () => Navigator.maybePop(context),
-                style: FilledButton.styleFrom(backgroundColor: _orange),
-                icon: const Icon(Icons.storefront_outlined),
-                label: Text(trf('ទៅមើលទូរស័ព្ទ', 'Browse phones')),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return StatusView(
+      icon: Icons.favorite_border,
+      error: true, // the warm red-pink look, like a heart
+      title: tr('មិនទាន់មានទូរស័ព្ទដែលអ្នកចូលចិត្តទេ'),
+      message: tr('ចុច ♥ លើទូរស័ព្ទ ដើម្បីរក្សាទុកនៅទីនេះ'),
+      actionLabel: Navigator.canPop(context)
+          ? trf('ទៅមើលទូរស័ព្ទ', 'Browse phones')
+          : null,
+      actionIcon: Icons.storefront_outlined,
+      onAction: () => Navigator.maybePop(context),
     );
   }
 
@@ -131,10 +100,13 @@ class _FavoritesViewState extends State<FavoritesView> {
 
   Widget _pill(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Text(
         text,
@@ -153,8 +125,8 @@ class _FavoritesViewState extends State<FavoritesView> {
       margin: const EdgeInsets.only(bottom: 10),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -179,11 +151,11 @@ class _FavoritesViewState extends State<FavoritesView> {
                       width: 84,
                       height: 96,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: const LinearGradient(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+                          colors: [AppColors.surfaceHigh, AppColors.tileLow],
                         ),
                       ),
                       alignment: Alignment.center,
@@ -213,7 +185,7 @@ class _FavoritesViewState extends State<FavoritesView> {
                               phone.name,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: _navy,
                               ),
@@ -232,7 +204,7 @@ class _FavoritesViewState extends State<FavoritesView> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xxs),
                       Wrap(
                         spacing: 6,
                         crossAxisAlignment: WrapCrossAlignment.end,
@@ -289,7 +261,9 @@ class _FavoritesViewState extends State<FavoritesView> {
                                   horizontal: 14,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
                                 ),
                               ),
                               child: const Icon(
@@ -321,9 +295,15 @@ class _FavoritesViewState extends State<FavoritesView> {
           future: _phones,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const ListSkeleton();
             } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return StatusView(
+                icon: Icons.wifi_off_rounded,
+                error: true,
+                title: trf('មិនអាចភ្ជាប់ទៅហាងបានទេ', "Can't reach the shop"),
+                actionLabel: trf('ព្យាយាមម្តងទៀត', 'Try again'),
+                onAction: _refresh,
+              );
             }
             // Phones the shop has since removed are simply left out
             final liked = [
@@ -331,7 +311,7 @@ class _FavoritesViewState extends State<FavoritesView> {
                 if (Favorites.instance.contains(phone.id)) phone,
             ];
             if (liked.isEmpty) return _empty();
-            return RefreshIndicator(
+            return ShopRefresh(
               onRefresh: _refresh,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
@@ -343,13 +323,14 @@ class _FavoritesViewState extends State<FavoritesView> {
                         '${liked.length} ទូរស័ព្ទដែលអ្នកចូលចិត្ត',
                         '${liked.length} liked phones',
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _muted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  for (final phone in liked) _item(phone),
+                  for (final (i, phone) in liked.indexed)
+                    Entrance(index: i, child: _item(phone)),
                 ],
               ),
             );

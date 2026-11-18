@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\Bakong\Bakong;
+use App\Services\Bakong\BakongUnavailable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,12 @@ class Order extends Model
         'courier', 'tracking_number', 'received_at', 'received_seen_at',
         'customer_number',
         'customer_hidden_at',
+        'bakong_qr', 'bakong_md5', 'bakong_checked_at',
     ];
+
+    protected $casts = ['bakong_checked_at' => 'datetime'];
+
+    protected $appends = ['pay_before'];
 
     // Shown to the customer when the admin doesn't type a note of their own
     public const TRACKING_NOTES = [
@@ -50,7 +57,7 @@ class Order extends Model
     }
 
     // Only sent once, in the guest checkout response
-    protected $hidden = ['access_token'];
+    protected $hidden = ['access_token', 'bakong_md5', 'bakong_checked_at'];
 
     // The logged-in owner, or a guest holding this order's token (X-Order-Token header)
     public function isOwnedBy(Request $request): bool
@@ -102,15 +109,118 @@ class Order extends Model
     }
 
     // Puts the reserved stock back on the shelf
-    public function cancelAndRestock(): void
+    public function cancelAndRestock(?string $note = null): void
     {
-        DB::transaction(function () {
+        DB::transaction(function () use ($note) {
             foreach ($this->items as $item) {
                 $item->product?->increment('stock', $item->qty);
             }
 
             $this->update(['status' => 'cancelled']);
-            $this->track();
+            $this->track(null, $note);
         });
+    }
+
+    // A KHQR order holds its phones only this long while nobody has paid
+    public static function unpaidMinutes(): int
+    {
+        return (int) config('shop.unpaid_minutes', 30);
+    }
+
+    // When an unpaid KHQR order will be cancelled; null for any other order
+    public function getPayBeforeAttribute(): ?string
+    {
+        if ($this->payment_method !== 'khqr' || $this->payment_status !== 'unpaid'
+            || $this->status !== 'pending' || ! $this->created_at) {
+            return null;
+        }
+
+        return $this->created_at->copy()->addMinutes(self::unpaidMinutes())->toIso8601String();
+    }
+
+    // Cancels KHQR orders nobody paid for in time and puts their phones back
+    // on the shelf. An order whose customer already sent a payment reference
+    // (payment_status "verifying") waits for the admin instead. Runs every
+    // minute from the scheduler, and also before orders or stock are read, so
+    // it works even where the scheduler isn't running.
+    public static function expireUnpaid(): int
+    {
+        $expired = static::where('payment_method', 'khqr')
+            ->where('payment_status', 'unpaid')
+            ->where('status', 'pending')
+            ->where('created_at', '<', now()->subMinutes(self::unpaidMinutes()))
+            ->with('items.product')
+            ->get();
+        $cancelled = 0;
+        foreach ($expired as $order) {
+            // Last look at Bakong: a payment made at the final second still counts
+            if ($order->bakong_md5 && Bakong::enabled()) {
+                try {
+                    if ($order->checkBakong(force: true)) {
+                        continue;
+                    }
+                } catch (BakongUnavailable) {
+                    // Can't tell if it was paid: wait (up to an hour) rather
+                    // than cancel an order the customer may have paid for
+                    if ($order->created_at->gt(now()->subMinutes(self::unpaidMinutes() + 60))) {
+                        continue;
+                    }
+                }
+            }
+            $order->cancelAndRestock('មិនបានបង់ប្រាក់ទាន់ពេល Order ត្រូវបានបោះបង់ដោយស្វ័យប្រវត្តិ');
+            $cancelled++;
+        }
+
+        return $cancelled;
+    }
+
+    // Gives a new KHQR order its own Bakong QR with the exact amount in it,
+    // payable until the order would be cancelled
+    public function attachBakongQr(): void
+    {
+        if ($this->payment_method !== 'khqr' || ! Bakong::enabled()) {
+            return;
+        }
+        $expires = $this->created_at->copy()->addMinutes(self::unpaidMinutes());
+        $qr = Bakong::qrFor((float) $this->total, (string) $this->code, $expires->getTimestampMs());
+        $this->update(['bakong_qr' => $qr, 'bakong_md5' => md5($qr)]);
+    }
+
+    // Asks Bakong whether this order's QR was paid; marks it paid when the
+    // full amount reached the shop's account. At most once every few seconds
+    // per order unless forced. Throws BakongUnavailable when Bakong can't answer.
+    public function checkBakong(bool $force = false): bool
+    {
+        if (! $this->bakong_md5 || ! Bakong::enabled() || $this->payment_status === 'paid'
+            || $this->status === 'cancelled') {
+            return $this->payment_status === 'paid';
+        }
+        if (! $force && $this->bakong_checked_at && $this->bakong_checked_at->gt(now()->subSeconds(3))) {
+            return false;
+        }
+        $this->update(['bakong_checked_at' => now()]);
+
+        $payment = Bakong::findPayment($this->bakong_md5);
+        if ($payment === null) {
+            return false;
+        }
+        if (! Bakong::covers($payment, (float) $this->total)) {
+            // Paid to the QR but not in full or not to us: leave it for the admin
+            $this->update([
+                'payment_status' => 'verifying',
+                'transaction_ref' => substr($payment['hash'], 0, 100) ?: null,
+            ]);
+            $this->track(null, 'ការបង់ប្រាក់មិនត្រូវចំនួន Admin នឹងពិនិត្យ');
+
+            return false;
+        }
+
+        $this->update([
+            'payment_status' => 'paid',
+            'transaction_ref' => substr($payment['hash'], 0, 100) ?: null,
+        ]);
+        $this->track(null, 'បានទទួលប្រាក់តាម Bakong KHQR (ផ្ទៀងផ្ទាត់ដោយស្វ័យប្រវត្តិ)');
+
+        return true;
     }
 }

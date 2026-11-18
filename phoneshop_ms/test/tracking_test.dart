@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:phoneshop_ms/models/order.dart';
+import 'package:phoneshop_ms/data/models/order.dart';
 import 'package:phoneshop_ms/screens/admin/admin_orders_tab.dart';
 import 'package:phoneshop_ms/screens/order_tracking_screen.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
 
 // An order as the API returns it, at [status], with tracking steps newest first
 Map<String, dynamic> orderJson(

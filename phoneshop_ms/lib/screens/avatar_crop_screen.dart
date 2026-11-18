@@ -2,7 +2,9 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../services/language.dart';
+import '../components/ux.dart';
+import '../theme/theme.dart';
+import '../hooks/language.dart';
 
 // Which part of the picture shows in a square [viewport], when the picture is laid out
 // covering it, then zoomed by [scale] and moved by [offset]. In the picture's own pixels.
@@ -198,7 +200,11 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
         title: Text(tr('តម្រឹមរូប')),
       ),
       body: _picture == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Shimmer(
+              child: Center(
+                child: SkeletonBox(width: 280, height: 280, radius: 140),
+              ),
+            )
           : Column(
               children: [
                 Expanded(child: _editor()),
@@ -210,7 +216,9 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   child: Row(
                     children: [
                       const Icon(Icons.zoom_out, color: Colors.white70),
@@ -230,7 +238,7 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
             ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           child: FilledButton(
             onPressed: _picture == null || _isSaving ? null : _use,
             style: FilledButton.styleFrom(

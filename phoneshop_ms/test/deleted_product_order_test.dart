@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phoneshop_ms/models/order.dart';
+import 'package:phoneshop_ms/data/models/order.dart';
 
 void main() {
   test('an order still loads after its phone was deleted', () {

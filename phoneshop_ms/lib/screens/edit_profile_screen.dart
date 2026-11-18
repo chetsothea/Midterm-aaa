@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/api_service.dart';
-import '../widgets/address_picker.dart';
-import '../widgets/common.dart';
+import '../data/api_service.dart';
+import '../components/address_picker.dart';
+import '../components/common.dart';
 import 'avatar_crop_screen.dart';
-import '../services/language.dart';
+import '../hooks/language.dart';
+import '../components/ux.dart';
+import '../theme/app_theme.dart';
 
 // The customer changes their own details, password and picture.
 // Returns true when something was saved.
@@ -98,23 +100,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  static const _navy = Color(0xFF0F2A5F);
+  static Color get _navy => AppColors.text;
 
   OutlineInputBorder _border(Color color, [double width = 1.2]) =>
       OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(color: color, width: width),
       );
 
   // Soft filled fields with light borders, like the rest of the app's forms
   InputDecoration _decor(String label, IconData icon) => InputDecoration(
     labelText: label,
-    prefixIcon: Icon(icon, color: const Color(0xFF475569)),
+    prefixIcon: Icon(icon, color: AppColors.textSoft),
     filled: true,
-    fillColor: const Color(0xFFF8FAFC),
-    border: _border(const Color(0xFFE2E8F0)),
-    enabledBorder: _border(const Color(0xFFE2E8F0)),
-    focusedBorder: _border(const Color(0xFF0E7490), 1.8),
+    fillColor: AppColors.surface,
+    border: _border(AppColors.line),
+    enabledBorder: _border(AppColors.line),
+    focusedBorder: _border(const Color(0xFF3D7BFF), 1.8),
     errorBorder: _border(Colors.red),
     focusedErrorBorder: _border(Colors.red, 1.8),
   );
@@ -130,8 +132,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -148,15 +150,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               CircleAvatar(
                 radius: 15,
                 backgroundColor: const Color(
-                  0xFF0E7490,
+                  0xFF3D7BFF,
                 ).withValues(alpha: 0.12),
-                child: Icon(icon, size: 17, color: const Color(0xFF0E7490)),
+                child: Icon(icon, size: 17, color: const Color(0xFF3D7BFF)),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
                     color: _navy,
@@ -167,10 +169,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           if (hint != null) ...[
             const SizedBox(height: 6),
-            Text(
-              hint,
-              style: const TextStyle(color: Colors.black54, fontSize: 13),
-            ),
+            Text(hint, style: TextStyle(color: AppColors.muted, fontSize: 13)),
           ],
           const SizedBox(height: 14),
           ...children,
@@ -183,13 +182,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _photo() {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_navy, Color(0xFF0E7490)],
+          colors: [_navy, Color(0xFF3D7BFF)],
         ),
       ),
       child: Column(
@@ -202,8 +201,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: AppColors.glass,
                     shape: BoxShape.circle,
                   ),
                   child: _avatarPreview != null
@@ -219,7 +218,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF97316),
+                      color: const Color(0xFF3D7BFF),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
@@ -248,7 +247,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: AppBar(title: Text(tr('កែព័ត៌មាន'))),
       body: Form(
         key: _formKey,
@@ -269,7 +268,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     validator: (v) =>
                         v!.trim().isEmpty ? tr('សូមបញ្ចូលឈ្មោះ') : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
@@ -281,7 +280,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ? null
                         : tr('Email មិនត្រឹមត្រូវ'),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _phone,
                     keyboardType: TextInputType.phone,
@@ -301,9 +300,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(12, 12, 4, 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.line),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,7 +314,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               Icons.location_on,
                               color: Colors.redAccent,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.xs),
                             Expanded(child: Text(_user.address)),
                           ],
                         ),
@@ -384,7 +383,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ? tr('យ៉ាងតិច 6 តួ')
                         : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _confirm,
                     obscureText: _hidePassword,
@@ -406,9 +405,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
       // Same bottom bar as Checkout: white, rounded, with the orange main button
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppColors.glass,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
           boxShadow: [
             BoxShadow(
               color: Color(0x1A000000),
@@ -419,21 +420,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             child: FilledButton.icon(
               onPressed: _isSaving ? null : _save,
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFF97316),
+                backgroundColor: const Color(0xFF3D7BFF),
                 minimumSize: const Size.fromHeight(50),
               ),
               icon: _isSaving
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
+                      child: DotsLoader(color: Colors.white, size: 5),
                     )
                   : const Icon(Icons.check),
               label: Text(tr('រក្សាទុក')),

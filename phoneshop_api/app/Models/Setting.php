@@ -27,4 +27,15 @@ class Setting extends Model
     {
         static::updateOrCreate(['key' => 'low_stock_threshold'], ['value' => (string) $threshold]);
     }
+
+    // Any text setting; '' when it was never set
+    public static function text(string $key): string
+    {
+        return static::find($key)?->value ?? '';
+    }
+
+    public static function setText(string $key, string $value): void
+    {
+        static::updateOrCreate(['key' => $key], ['value' => $value]);
+    }
 }

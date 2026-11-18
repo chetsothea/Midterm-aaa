@@ -5,10 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:phoneshop_ms/screens/favorites_view.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
-import 'package:phoneshop_ms/services/cart.dart';
-import 'package:phoneshop_ms/services/favorites.dart';
-import 'package:phoneshop_ms/widgets/store_menu.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
+import 'package:phoneshop_ms/hooks/cart.dart';
+import 'package:phoneshop_ms/hooks/favorites.dart';
+import 'package:phoneshop_ms/components/store_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

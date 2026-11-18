@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:phoneshop_ms/models/user.dart';
+import 'package:phoneshop_ms/data/models/user.dart';
 import 'package:phoneshop_ms/screens/account_screen.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
 
 void main() {
   setUp(() {

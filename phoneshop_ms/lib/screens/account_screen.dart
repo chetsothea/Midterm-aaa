@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../services/cart.dart';
-import '../models/order.dart';
-import '../models/user.dart';
-import '../services/favorites.dart';
-import '../widgets/common.dart';
-import '../widgets/confirm_dialog.dart';
-import '../widgets/language_switch.dart';
-import '../widgets/store_app_bar.dart';
+import '../data/api_service.dart';
+import '../hooks/cart.dart';
+import '../data/models/order.dart';
+import '../data/models/user.dart';
+import '../hooks/favorites.dart';
+import '../components/common.dart';
+import '../components/confirm_dialog.dart';
+import '../components/language_switch.dart';
+import '../components/store_app_bar.dart';
 import 'favorites_view.dart';
 import 'edit_profile_screen.dart';
 import 'my_orders_screen.dart';
-import '../services/language.dart';
+import '../components/motion.dart';
+import '../hooks/language.dart';
+import '../components/theme_toggle.dart';
+import '../theme/app_theme.dart';
 
 // "Account" in the store menu: the customer's details, their orders, and logout.
 // Only for logged-in customers; guests go to Login instead.
@@ -67,12 +70,12 @@ class _AccountScreenState extends State<AccountScreen> {
     Navigator.pop(context); // back to the store
   }
 
-  static const _navy = Color(0xFF0F2A5F);
+  static Color get _navy => AppColors.text;
 
   // White card with a soft shadow, the same as the other pages
-  static final _card = BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16),
+  static BoxDecoration get _card => BoxDecoration(
+    color: AppColors.glass,
+    borderRadius: BorderRadius.circular(AppRadius.lg),
     boxShadow: const [
       BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 2)),
     ],
@@ -88,19 +91,19 @@ class _AccountScreenState extends State<AccountScreen> {
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: Row(
       children: [
-        _iconCircle(icon, const Color(0xFF0E7490)),
-        const SizedBox(width: 12),
+        _iconCircle(icon, const Color(0xFF3D7BFF)),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
               ),
               Text(
                 value.isEmpty ? '—' : value,
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
+                style: TextStyle(fontSize: 15, color: AppColors.text2),
               ),
             ],
           ),
@@ -128,10 +131,10 @@ class _AccountScreenState extends State<AccountScreen> {
   // Tapping it opens that list.
   Widget _stat(String value, String label, VoidCallback onTap) => Expanded(
     child: InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
         child: Column(
           children: [
             Text(
@@ -165,7 +168,7 @@ class _AccountScreenState extends State<AccountScreen> {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 color: _navy,
                 fontSize: 15,
@@ -176,7 +179,7 @@ class _AccountScreenState extends State<AccountScreen> {
             TextButton.icon(
               onPressed: onAction,
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF0E7490),
+                foregroundColor: const Color(0xFF3D7BFF),
                 visualDensity: VisualDensity.compact,
               ),
               icon: const Icon(Icons.edit_outlined, size: 16),
@@ -200,8 +203,8 @@ class _AccountScreenState extends State<AccountScreen> {
           children: [
             Row(
               children: [
-                _iconCircle(Icons.language, const Color(0xFF0E7490)),
-                const SizedBox(width: 12),
+                _iconCircle(Icons.language, const Color(0xFF3D7BFF)),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     trf('ភាសា', 'Language'),
@@ -246,15 +249,15 @@ class _AccountScreenState extends State<AccountScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_navy, Color(0xFF0E7490)],
+          colors: [_navy, Color(0xFF3D7BFF)],
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x330F2A5F),
+            color: AppColors.shadow,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -268,8 +271,8 @@ class _AccountScreenState extends State<AccountScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(3),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: AppColors.glass,
                   shape: BoxShape.circle,
                 ),
                 child: UserAvatar(user: user, radius: 42),
@@ -278,7 +281,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 right: -2,
                 bottom: -2,
                 child: Material(
-                  color: const Color(0xFFF97316),
+                  color: const Color(0xFF3D7BFF),
                   shape: const CircleBorder(
                     side: BorderSide(color: Colors.white, width: 2),
                   ),
@@ -356,13 +359,13 @@ class _AccountScreenState extends State<AccountScreen> {
     final user = ApiService.currentUser;
     if (user == null) return const Scaffold(); // while closing after logout
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: storeAppBar(title: Text(tr('Account'))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-        children: [
+        children: Entrance.stagger([
           _header(user),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           _cardTitle(
             trf('ព័ត៌មានផ្ទាល់ខ្លួន', 'Your details'),
             action: trf('កែ', 'Edit'),
@@ -383,7 +386,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           Container(
             clipBehavior: Clip.antiAlias,
             decoration: _card,
@@ -401,7 +404,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   const Divider(height: 1, indent: 66),
                   _menuItem(
                     Icons.receipt_long_outlined,
-                    const Color(0xFFF97316),
+                    const Color(0xFF3D7BFF),
                     tr('Order របស់ខ្ញុំ'),
                     tr('មើលស្ថានភាព និងតាមដានឥវ៉ាន់'),
                     _openOrders,
@@ -409,7 +412,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   const Divider(height: 1, indent: 66),
                   _menuItem(
                     Icons.favorite_border,
-                    const Color(0xFFE11D48),
+                    const Color(0xFFFF453A),
                     tr('ចូលចិត្ត'),
                     trf('ទូរស័ព្ទដែលអ្នករក្សាទុក', 'Phones you saved'),
                     _favorites,
@@ -418,16 +421,26 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           _cardTitle(trf('ការកំណត់', 'Settings')),
-          Container(decoration: _card, child: _languageSwitch()),
-          const SizedBox(height: 20),
+          // Settings: language, then dark / light mode
+          Container(
+            decoration: _card,
+            child: Column(
+              children: [
+                _languageSwitch(),
+                const Divider(height: 1),
+                const ThemeSwitchTile(),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           OutlinedButton.icon(
             onPressed: _logout,
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
               side: const BorderSide(color: Colors.red),
-              backgroundColor: Colors.white,
+              backgroundColor: AppColors.surface,
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -443,7 +456,7 @@ class _AccountScreenState extends State<AccountScreen> {
               style: TextStyle(color: Colors.black38, fontSize: 12),
             ),
           ),
-        ],
+        ]),
       ),
     );
   }

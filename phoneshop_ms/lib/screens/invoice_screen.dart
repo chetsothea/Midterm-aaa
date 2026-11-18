@@ -3,13 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
-import '../models/order.dart';
-import '../widgets/common.dart';
-import '../services/language.dart';
-import '../widgets/brand_wordmark.dart';
+import '../data/models/order.dart';
+import '../components/common.dart';
+import '../hooks/language.dart';
+import '../components/brand_wordmark.dart';
+import '../theme/app_theme.dart';
 
-const _navy = Color(0xFF0F2A5F);
-const _muted = Color(0xFF64748B);
+Color get _navy => AppColors.text;
+Color get _muted => AppColors.muted;
 
 // "INV-7K3Q9A" from the order's random code, so a bill doesn't show how many orders
 // the shop has had. "INV-000018" only for an order without a code.
@@ -70,11 +71,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
   Widget _label(String text) => Text(
     text,
-    style: const TextStyle(
-      fontSize: 12,
-      color: _muted,
-      fontWeight: FontWeight.w600,
-    ),
+    style: TextStyle(fontSize: 12, color: _muted, fontWeight: FontWeight.w600),
   );
 
   Widget _row(String label, Widget value) => Padding(
@@ -82,15 +79,15 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: _muted)),
-        const SizedBox(width: 12),
+        Text(label, style: TextStyle(color: _muted)),
+        const SizedBox(width: AppSpacing.sm),
         Flexible(child: value),
       ],
     ),
   );
 
   Widget _item(OrderItem item) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -105,12 +102,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               const SizedBox(height: 2),
               Text(
                 '${money(item.price)} × ${item.qty}',
-                style: const TextStyle(fontSize: 13, color: _muted),
+                style: TextStyle(fontSize: 13, color: _muted),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.sm),
         Text(
           money(item.price * item.qty),
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -129,11 +126,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   // A soft grey box with a small heading, for the order and buyer details
   Widget _box(String title, List<Widget> children) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.all(AppSpacing.sm),
     decoration: BoxDecoration(
-      color: const Color(0xFFF8FAFC),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFE2E8F0)),
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      border: Border.all(color: AppColors.line),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,11 +141,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   // Navy band with the logo, the word "invoice" and its number
   Widget _header(Order order) => Container(
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [_navy, Color(0xFF0E7490)],
+        colors: [_navy, Color(0xFF3D7BFF)],
       ),
     ),
     child: Row(
@@ -160,18 +157,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             3,
           ), // a thin white edge, so the navy icon stands out on the navy band
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.glass,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Image.asset('assets/images/logo.png'),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const BrandWordmark(height: 20),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xxs),
               const Text(
                 'Phone Shop',
                 style: TextStyle(color: Colors.white70, fontSize: 12),
@@ -213,7 +210,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           for (var i = 0; i < count; i++)
-            Container(width: 5, height: 1.5, color: const Color(0xFFCBD5E1)),
+            Container(width: 5, height: 1.5, color: AppColors.outline),
         ],
       );
     },
@@ -224,15 +221,15 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     final paid = order.paymentStatus == 'paid';
     final pieces = order.items.fold<int>(0, (sum, item) => sum + item.qty);
     return Container(
-      color: Colors.white,
+      color: AppColors.glass,
       child: DefaultTextStyle.merge(
-        style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14),
+        style: TextStyle(color: AppColors.text2, fontSize: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _header(order),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -253,7 +250,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                   ],
                   // Order and buyer side by side when there's room, else one under the other
                   LayoutBuilder(
@@ -261,7 +258,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       final details = _box('Order', [
                         Text(
                           order.ref,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                             color: _navy,
@@ -270,7 +267,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                         const SizedBox(height: 2),
                         Text(
                           _when(order.createdAt),
-                          style: const TextStyle(fontSize: 12, color: _muted),
+                          style: TextStyle(fontSize: 12, color: _muted),
                         ),
                       ]);
                       final buyer = _box(tr('អ្នកទិញ'), [
@@ -284,7 +281,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                         if (order.address.isNotEmpty)
                           Text(
                             order.address,
-                            style: const TextStyle(fontSize: 12, color: _muted),
+                            style: TextStyle(fontSize: 12, color: _muted),
                           ),
                       ]);
                       if (box.maxWidth < 380) {
@@ -308,23 +305,23 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   // The items, under a navy heading row
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 8,
+                      vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
                       color: _navy.withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
                             trf('ទំនិញ ($pieces)', 'Items ($pieces)'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
                               color: _navy,
                             ),
@@ -332,7 +329,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                         ),
                         Text(
                           trf('តម្លៃ', 'Amount'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             color: _navy,
                           ),
@@ -345,26 +342,21 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     child: Column(
                       children: [
                         for (var i = 0; i < order.items.length; i++) ...[
-                          if (i > 0)
-                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                          if (i > 0) Divider(height: 1, color: AppColors.page),
                           _item(order.items[i]),
                         ],
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xs),
                   // The total, highlighted, with a "paid" stamp once the money is in
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: paid
-                          ? const Color(0xFFF0FDF4)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
+                      color: paid ? const Color(0xFFF0FDF4) : AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(
-                        color: paid
-                            ? const Color(0xFFBBF7D0)
-                            : const Color(0xFFE2E8F0),
+                        color: paid ? const Color(0xFFBBF7D0) : AppColors.line,
                       ),
                     ),
                     child: Row(
@@ -375,7 +367,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                             children: [
                               Text(
                                 tr('សរុប'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   color: _muted,
                                 ),
@@ -385,7 +377,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   money(order.total),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
                                     color: _navy,
@@ -401,19 +393,21 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
-                                vertical: 4,
+                                vertical: AppSpacing.xxs,
                               ),
                               decoration: BoxDecoration(
                                 border: Border.all(
-                                  color: const Color(0xFF16A34A),
+                                  color: const Color(0xFF30D158),
                                   width: 2,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                               ),
                               child: const Text(
                                 'PAID',
                                 style: TextStyle(
-                                  color: Color(0xFF16A34A),
+                                  color: Color(0xFF30D158),
                                   fontWeight: FontWeight.w900,
                                   fontSize: 16,
                                   letterSpacing: 2,
@@ -424,7 +418,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   _row(
                     tr('វិធីបង់ប្រាក់'),
                     Text(
@@ -450,16 +444,13 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       'Transaction ID',
                       Text(order.transactionRef!, textAlign: TextAlign.end),
                     ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   _dashes(),
                   const SizedBox(height: 14),
                   Text(
                     tr('សូមអរគុណដែលបានទិញពី PS168'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: _navy,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -473,10 +464,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: AppBar(title: Text(tr('វិក្កយបត្រ'))),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
@@ -501,7 +492,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           child: FilledButton.icon(
             onPressed: _isSaving ? null : _save,
             style: FilledButton.styleFrom(

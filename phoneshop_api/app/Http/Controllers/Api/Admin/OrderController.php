@@ -17,6 +17,7 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
+        Order::expireUnpaid(); // free stock held by orders nobody paid for
         $query = Order::with(['user', 'items.product', 'trackings'])->latest();
 
         if ($status = $request->query('status')) {

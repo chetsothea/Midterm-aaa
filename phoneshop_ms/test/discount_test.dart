@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:phoneshop_ms/models/phone.dart';
+import 'package:phoneshop_ms/data/models/phone.dart';
 import 'package:phoneshop_ms/screens/admin/product_form_screen.dart';
 import 'package:phoneshop_ms/screens/product_detail_screen.dart';
-import 'package:phoneshop_ms/widgets/product_card.dart';
+import 'package:phoneshop_ms/components/product_card.dart';
 
 Phone discounted() => Phone.fromJson({
   'id': 1,

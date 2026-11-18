@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
-import '../models/phone.dart';
-import '../services/cart.dart';
-import '../services/favorites.dart';
-import '../widgets/brand_row.dart';
-import '../widgets/common.dart';
-import '../widgets/product_card.dart';
-import '../widgets/store_app_bar.dart';
+import '../data/models/phone.dart';
+import '../hooks/cart.dart';
+import '../hooks/favorites.dart';
+import '../components/brand_row.dart';
+import '../components/common.dart';
+import '../components/motion.dart';
+import '../components/product_card.dart';
+import '../components/store_app_bar.dart';
 import 'cart_screen.dart';
 import 'login_screen.dart';
-import '../services/language.dart';
+import '../components/ux.dart';
+import '../components/reviews.dart';
+import '../components/phone_3d.dart';
+import '../hooks/language.dart';
+import '../data/api_service.dart';
+import 'compare_screen.dart';
+import '../theme/app_theme.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Phone phone;
@@ -24,6 +31,15 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _qty = 1;
+  // Drives the picture's parallax as the page scrolls
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   // First colour is picked by default; '' when the phone has no colour options
   late String _color = phone.colors.isEmpty ? '' : phone.colors.first;
   // Smallest size is picked by default; '' when the phone is sold in one size only
@@ -38,7 +54,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   void _addToCart({bool buyNow = false}) async {
     if (!await requireLogin(context) || !mounted) return;
-    if (!Cart.instance.add(phone, _qty, _color, _storage)) {
+    final added = Cart.instance.add(phone, _qty, _color, _storage);
+    added ? Haptics.success() : Haptics.warning();
+    if (!added) {
       showMessage(
         context,
         trf(
@@ -64,36 +82,64 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  Widget _hero(Widget child) {
-    final tag = widget.heroTag;
-    return tag == null ? child : Hero(tag: tag, child: child);
+  // Opens Compare with this phone already picked on the left
+  Future<void> _compare() async {
+    try {
+      final phones = await ApiService.fetchPhones();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CompareScreen(phones: phones, first: widget.phone),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        showMessage(
+          context,
+          trf('មិនអាចភ្ជាប់ទៅហាងបានទេ', "Can't reach the shop"),
+          error: true,
+        );
+      }
+    }
   }
 
-  static const _navy = Color(0xFF0F2A5F);
-  static const _red = Color(0xFFE11D48);
-  static const _orange = Color(0xFFF97316);
+  Widget _hero(Widget child) {
+    final tag = widget.heroTag;
+    // Inside a turntable you can spin with a finger (widgets/phone_3d.dart);
+    // the picture itself is what flies here from the store card
+    final picture = tag == null ? child : Hero(tag: tag, child: child);
+    return Phone3DViewer(child: picture);
+  }
 
-  static final _card = BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16),
+  static Color get _navy => AppColors.text;
+  static const _red = Color(0xFFFF453A);
+  static const _orange = Color(0xFF3D7BFF);
+
+  static BoxDecoration get _card => BoxDecoration(
+    color: AppColors.glass,
+    borderRadius: BorderRadius.circular(AppRadius.lg),
     boxShadow: const [
       BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 2)),
     ],
   );
 
   Widget _pill(String text, Color color, [IconData? icon]) {
+    // A very dark brand colour (Apple's near-black) would vanish on the dark
+    // page, so its text and icon use the light grey instead
+    if (color.computeLuminance() < 0.05) color = AppColors.textSoft;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
             Icon(icon, size: 13, color: color),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppSpacing.xxs),
           ],
           // Shortened with … rather than running past the card on a narrow phone
           Flexible(
@@ -125,11 +171,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       label: label,
       selected: selected,
       showCheckmark: false,
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.surface,
       selectedColor: _navy.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       side: BorderSide(
-        color: selected ? _navy : const Color(0xFFE2E8F0),
+        color: selected ? _navy : AppColors.line,
         width: selected ? 2 : 1,
       ),
       onSelected: (_) => onTap(),
@@ -142,11 +190,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           TextSpan(
             text: label,
-            style: const TextStyle(fontWeight: FontWeight.w700, color: _navy),
+            style: TextStyle(fontWeight: FontWeight.w700, color: _navy),
           ),
           TextSpan(
             text: value,
-            style: const TextStyle(color: Colors.black54),
+            style: TextStyle(color: AppColors.muted),
           ),
         ],
       ),
@@ -159,9 +207,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       width: width,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.line),
       ),
       child: Row(
         children: [
@@ -169,12 +217,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFF0E7490).withValues(alpha: 0.1),
+              color: const Color(0xFF3D7BFF).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: const Color(0xFF0E7490)),
+            child: Icon(icon, size: 18, color: const Color(0xFF3D7BFF)),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,13 +231,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  style: TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
                 Text(
                   value,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: _navy,
                     fontSize: 13,
@@ -213,7 +261,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           tooltip: saved
               ? trf('ដកចេញពី Favourites', 'Remove from favourites')
               : trf('ដាក់ក្នុង Favourites', 'Add to favourites'),
-          onPressed: () => Favorites.instance.toggle(phone.id),
+          onPressed: () {
+            Haptics.tap();
+            Favorites.instance.toggle(phone.id);
+          },
           icon: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             transitionBuilder: (child, animation) =>
@@ -250,61 +301,111 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       // The store's navy-to-teal bar with rounded corners, like the home page
       appBar: storeAppBar(
         title: Text(phone.name, overflow: TextOverflow.ellipsis),
-        actions: [_favoriteButton(), const SizedBox(width: 4)],
+        actions: [
+          // Side by side with another phone
+          IconButton(
+            tooltip: trf('ប្រៀបធៀប', 'Compare'),
+            icon: const Icon(Icons.compare_arrows_rounded),
+            onPressed: _compare,
+          ),
+          _favoriteButton(),
+          const SizedBox(width: AppSpacing.xxs),
+        ],
       ),
       body: ListView(
+        controller: _scroll,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-        children: [
+        // Each block of the page rises in after the one above it
+        children: Entrance.stagger([
           // The picture on the soft store colours, switching with the picked colour
-          Container(
-            height: 260,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
-              ),
-              border: Border.all(color: Colors.white, width: 3),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x261D4ED8),
-                  blurRadius: 16,
-                  offset: Offset(0, 6),
+          // Parallax: the picture slides down slower than the page and fades a
+          // little as it scrolls away, so it feels further back than the text
+          AnimatedBuilder(
+            animation: _scroll,
+            child: Container(
+              height: 260,
+              clipBehavior:
+                  Clip.antiAlias, // keeps the zoomed phone in its card
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.surfaceHigh, AppColors.tileLow],
                 ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: _hero(
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: PhoneImage(
-                        key: ValueKey(phone.imageFor(_color)),
-                        url: phone.imageFor(_color),
-                        size: 220,
+                border: Border.all(color: AppColors.glassEdge), // glass edge
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 16,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // A soft white spotlight behind the phone (the turntable adds
+                  // the shadow on the "floor" under it)
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        gradient: RadialGradient(
+                          center: const Alignment(0, -0.1),
+                          radius: 0.75,
+                          colors: [
+                            // A soft electric-blue halo behind the phone
+                            const Color(0xFF3D7BFF).withValues(alpha: 0.22),
+                            const Color(0xFF3D7BFF).withValues(alpha: 0),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (phone.hasDiscount)
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: DiscountBadge(
-                      percent: phone.discountPercent,
-                      fontSize: 14,
+                  Center(
+                    child: _hero(
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: PhoneImage(
+                          key: ValueKey(phone.imageFor(_color)),
+                          url: phone.imageFor(_color),
+                          size: 220,
+                        ),
+                      ),
                     ),
                   ),
-              ],
+                  if (phone.hasDiscount)
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: DiscountBadge(
+                        percent: phone.discountPercent,
+                        fontSize: 14,
+                      ),
+                    ),
+                ],
+              ),
             ),
+            builder: (context, child) {
+              if (Motion.off(context) || !_scroll.hasClients) return child!;
+              final offset = _scroll.offset.clamp(0.0, 260.0);
+              return Transform.translate(
+                offset: Offset(0, offset * 0.4),
+                child: Opacity(
+                  opacity: 1 - offset / 520,
+                  child: Transform.scale(
+                    scale: 1 - offset / 2600,
+                    child: child,
+                  ),
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           // Name, price and stock
           Container(
             padding: const EdgeInsets.all(14),
@@ -319,7 +420,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     _pill(phone.brand, brandColor(phone.brand)),
                     _pill(
                       phone.condition,
-                      const Color(0xFF16A34A),
+                      const Color(0xFF30D158),
                       Icons.check,
                     ),
                     _pill(
@@ -337,7 +438,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 const SizedBox(height: 10),
                 Text(
                   phone.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: _navy,
@@ -348,8 +449,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   spacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.end,
                   children: [
-                    Text(
-                      money(price), // follows the picked storage size
+                    CountUpMoney(
+                      price, // follows the picked storage size, counting up
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
@@ -384,7 +485,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
           if (phone.colors.isNotEmpty || phone.storageOptions.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: _card,
@@ -431,9 +532,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 ),
                                 Text(
                                   money(option.price),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.black54,
+                                    color: AppColors.muted,
                                   ),
                                 ),
                               ],
@@ -449,52 +550,61 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 12),
-          // The main specifications, then the shop's description
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: _card,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  trf('លក្ខណៈពិសេស', 'Specifications'),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: _navy,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Two tiles a row on a phone
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final width = (constraints.maxWidth - 8) / 2;
-                    return Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final (icon, label, value) in specs)
-                          _spec(icon, label, value, width),
-                      ],
-                    );
-                  },
-                ),
-                if (phone.description.isNotEmpty) ...[
-                  const Divider(height: 24),
-                  Text(phone.description, style: const TextStyle(height: 1.5)),
-                ],
-              ],
+          const SizedBox(height: AppSpacing.sm),
+          // The main specifications, then the shop's description, each in a
+          // section that folds open and shut
+          ExpandableSection(
+            title: trf('លក្ខណៈពិសេស', 'Specifications'),
+            icon: Icons.memory_rounded,
+            // Two tiles a row on a phone
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = (constraints.maxWidth - 8) / 2;
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final (icon, label, value) in specs)
+                      _spec(icon, label, value, width),
+                  ],
+                );
+              },
             ),
           ),
-        ],
+          if (phone.description.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            ExpandableSection(
+              title: trf('អំពីទូរស័ព្ទនេះ', 'About this phone'),
+              icon: Icons.notes_rounded,
+              initiallyExpanded: false,
+              child: Text(
+                phone.description,
+                style: TextStyle(height: 1.6, color: AppColors.textSoft),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          // Stars and words from customers who received this phone
+          ExpandableSection(
+            title: phone.ratingCount == 0
+                ? trf('ការវាយតម្លៃ', 'Reviews')
+                : trf(
+                    'ការវាយតម្លៃ (${phone.ratingCount})',
+                    'Reviews (${phone.ratingCount})',
+                  ),
+            icon: Icons.star_rounded,
+            child: ReviewsSection(phone: phone),
+          ),
+        ]),
       ),
       // Same bottom bar as Cart and Checkout: quantity, add to cart, buy now
       bottomNavigationBar: inStock
           ? Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              decoration: BoxDecoration(
+                color: AppColors.glass,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Color(0x1A000000),
@@ -511,8 +621,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       // − n + in one rounded pill
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(24),
+                          color: AppColors.page,
+                          borderRadius: BorderRadius.circular(AppRadius.xxl),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -526,7 +636,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             Text(
                               '$_qty',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                                 color: _navy,
@@ -542,7 +652,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _addToCart,
@@ -565,7 +675,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: () => _addToCart(buyNow: true),
@@ -574,7 +684,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             minimumSize: const Size.fromHeight(48),
                             padding: const EdgeInsets.symmetric(horizontal: 6),
                             elevation: 2,
-                            shadowColor: const Color(0x66F97316),
+                            shadowColor: const Color(0x663D7BFF),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),

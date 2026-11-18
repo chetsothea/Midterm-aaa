@@ -60,7 +60,7 @@ class User extends Authenticatable
     // Full URL of the profile picture, '' when there is none
     public function getAvatarUrlAttribute(): string
     {
-        return $this->avatar ? url('uploads/'.$this->avatar) : '';
+        return \App\Support\Uploads::url($this->avatar);
     }
 
     public function orders()

@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:phoneshop_ms/models/order.dart';
+import 'package:phoneshop_ms/data/models/order.dart';
 import 'package:phoneshop_ms/screens/admin/admin_orders_tab.dart';
-import 'package:phoneshop_ms/services/api_service.dart';
-import 'package:phoneshop_ms/widgets/order_tracking.dart';
+import 'package:phoneshop_ms/data/api_service.dart';
+import 'package:phoneshop_ms/components/order_tracking.dart';
 
 void main() {
   testWidgets('the admin corrects a wrong location from the timeline', (

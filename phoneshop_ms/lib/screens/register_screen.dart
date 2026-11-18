@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../widgets/address_picker.dart';
-import '../widgets/auth_ui.dart';
-import '../widgets/common.dart';
-import '../services/language.dart';
+import '../data/api_service.dart';
+import '../components/address_picker.dart';
+import '../components/auth_ui.dart';
+import '../components/common.dart';
+import '../hooks/language.dart';
+import '../theme/app_theme.dart';
 
 // Returns the new User to the login screen when registration succeeds
 class RegisterScreen extends StatefulWidget {
@@ -72,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF0F2A5F), Color(0xFF0E7490)],
+                colors: [Color(0xFF101318), Color(0xFF3D7BFF)],
               ),
             ),
             child: Text(
@@ -88,10 +89,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF0F2A5F),
+                color: AppColors.text,
               ),
             ),
           ),
@@ -161,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) =>
                       v != _password.text ? tr('Passwords do not match') : null,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xxs),
                 _part(
                   2,
                   trf('ទំនាក់ទំនង និងអាសយដ្ឋាន', 'Contact and address'),
@@ -185,10 +186,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   padding: const EdgeInsets.only(left: 4),
                   child: Text(
                     tr('Address'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F2A5F),
+                      color: AppColors.text,
                     ),
                   ),
                 ),

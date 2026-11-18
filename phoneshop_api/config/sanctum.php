@@ -50,7 +50,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // A login lasts 30 days; after that the app asks to log in again
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------

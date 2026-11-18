@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../models/phone.dart';
-import '../../services/api_service.dart';
-import '../../widgets/brand_row.dart';
-import '../../widgets/common.dart';
-import '../../widgets/product_card.dart';
+import '../../data/models/phone.dart';
+import '../../data/api_service.dart';
+import '../../components/brand_row.dart';
+import '../../components/common.dart';
+import '../../components/product_card.dart';
 import 'product_form_screen.dart';
+import '../../components/ux.dart';
+import '../../components/shop_refresh.dart';
+import '../../hooks/language.dart';
+import '../../theme/app_theme.dart';
 
 // Chip that shows only phones running out (or out) of stock
 const _lowStockFilter = '__low__';
@@ -84,10 +88,10 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(),
-        backgroundColor: const Color(0xFFF97316),
+        backgroundColor: const Color(0xFF3D7BFF),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('បន្ថែមទូរស័ព្ទ'),
@@ -96,9 +100,16 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
         future: _phones,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton();
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return StatusView(
+              icon: Icons.wifi_off_rounded,
+              error: true,
+              title: trf('មិនអាចភ្ជាប់ទៅហាងបានទេ', "Can't reach the shop"),
+              message: '${snapshot.error}',
+              actionLabel: trf('ព្យាយាមម្តងទៀត', 'Try again'),
+              onAction: _refresh,
+            );
           } else if (snapshot.data!.isEmpty) {
             return const Center(child: Text('មិនទាន់មានទូរស័ព្ទ'));
           }
@@ -108,7 +119,7 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
             children: [
               _toolbar(all),
               Expanded(
-                child: RefreshIndicator(
+                child: ShopRefresh(
                   onRefresh: _refresh,
                   child: shown.isEmpty
                       ? ListView(
@@ -119,7 +130,7 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
                               size: 56,
                               color: Colors.black26,
                             ),
-                            SizedBox(height: 8),
+                            SizedBox(height: AppSpacing.xs),
                             Center(child: Text('រកមិនឃើញទូរស័ព្ទ')),
                           ],
                         )
@@ -147,7 +158,7 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
     }
     final low = all.where(_isLow).length;
     return Container(
-      color: Colors.white,
+      color: AppColors.glass,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Column(
         children: [
@@ -158,26 +169,26 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
               hintText: 'ស្វែងរកឈ្មោះទូរស័ព្ទ ឬម៉ាក',
               prefixIcon: const Icon(Icons.search),
               filled: true,
-              fillColor: const Color(0xFFF1F5F9),
+              fillColor: AppColors.page,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
                 borderSide: BorderSide.none,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           SizedBox(
             height: 36,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _chip('', 'ទាំងអស់', all.length, const Color(0xFF0F2A5F)),
+                _chip('', 'ទាំងអស់', all.length, AppColors.text),
                 if (low > 0)
                   _chip(
                     _lowStockFilter,
                     'ស្តុកជិតអស់',
                     low,
-                    const Color(0xFFDC2626),
+                    const Color(0xFFFF453A),
                   ),
                 for (final entry in brands.entries)
                   _chip(
@@ -203,12 +214,12 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
         visualDensity: VisualDensity.compact,
         selected: selected,
         selectedColor: color,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         side: BorderSide(color: selected ? color : Colors.black12),
         label: Text(
           '$label  $count',
           style: TextStyle(
-            color: selected ? Colors.white : Colors.black87,
+            color: selected ? Colors.white : AppColors.text2,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
@@ -222,18 +233,18 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
     final out = phone.stock <= 0;
     final low = _isLow(phone);
     final stockColor = out
-        ? const Color(0xFFDC2626)
+        ? const Color(0xFFFF453A)
         : low
-        ? const Color(0xFFEA8A00)
-        : const Color(0xFF16A34A);
+        ? const Color(0xFF2F62D9)
+        : const Color(0xFF30D158);
     final brand = brandColor(phone.brand);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -261,11 +272,11 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
                       height: 76,
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: const LinearGradient(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+                          colors: [AppColors.surfaceHigh, AppColors.tileLow],
                         ),
                       ),
                       child: PhoneImage(url: phone.imageUrl, size: 64),
@@ -281,7 +292,7 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
                       ),
                   ],
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +306,7 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
                           fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xxs),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -305,8 +316,8 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
                               color: phone.hasDiscount
-                                  ? const Color(0xFFE11D48)
-                                  : const Color(0xFF0F2A5F),
+                                  ? const Color(0xFFFF453A)
+                                  : AppColors.text,
                             ),
                           ),
                           if (phone.hasDiscount) ...[
@@ -332,7 +343,7 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
                         runSpacing: 4,
                         children: [
                           _pill(phone.brand, brand),
-                          _pill(phone.condition, const Color(0xFF475569)),
+                          _pill(phone.condition, AppColors.textSoft),
                           _pill(
                             out ? 'អស់ស្តុក' : 'ស្តុក: ${phone.stock}',
                             stockColor,
@@ -370,10 +381,13 @@ class _AdminProductsTabState extends State<AdminProductsTab> {
 
   Widget _pill(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Text(
         text,

@@ -1,10 +1,13 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../models/phone.dart';
-import '../../services/api_service.dart';
-import '../../widgets/common.dart';
-import '../../widgets/product_card.dart';
+import '../../data/models/phone.dart';
+import '../../data/api_service.dart';
+import '../../components/common.dart';
+import '../../components/product_card.dart';
+import '../../components/ux.dart';
+import '../../hooks/language.dart';
+import '../../theme/app_theme.dart';
 
 // Add a new phone, or edit one when [phone] is given
 class ProductFormScreen extends StatefulWidget {
@@ -129,9 +132,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.line),
       ),
       clipBehavior: Clip.antiAlias,
       child: ListTile(
@@ -197,11 +200,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
-  static const _navy = Color(0xFF0F2A5F);
+  static Color get _navy => AppColors.text;
 
   OutlineInputBorder _border(Color color, [double width = 1.2]) =>
       OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(color: color, width: width),
       );
 
@@ -209,10 +212,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   InputDecoration _decor(String label) => InputDecoration(
     labelText: label,
     filled: true,
-    fillColor: const Color(0xFFF8FAFC),
-    border: _border(const Color(0xFFE2E8F0)),
-    enabledBorder: _border(const Color(0xFFE2E8F0)),
-    focusedBorder: _border(const Color(0xFF0E7490), 1.8),
+    fillColor: AppColors.surface,
+    border: _border(AppColors.line),
+    enabledBorder: _border(AppColors.line),
+    focusedBorder: _border(const Color(0xFF3D7BFF), 1.8),
     errorBorder: _border(Colors.red),
     focusedErrorBorder: _border(Colors.red, 1.8),
   );
@@ -223,8 +226,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 2),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -241,14 +244,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               CircleAvatar(
                 radius: 15,
                 backgroundColor: const Color(
-                  0xFF0E7490,
+                  0xFF3D7BFF,
                 ).withValues(alpha: 0.12),
-                child: Icon(icon, size: 17, color: const Color(0xFF0E7490)),
+                child: Icon(icon, size: 17, color: const Color(0xFF3D7BFF)),
               ),
               const SizedBox(width: 10),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
                   color: _navy,
@@ -295,7 +298,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.page,
       appBar: AppBar(
         title: Text(_isEdit ? 'កែប្រែទូរស័ព្ទ' : 'បន្ថែមទូរស័ព្ទ'),
       ),
@@ -312,16 +315,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+                    colors: [AppColors.surfaceHigh, AppColors.tileLow],
                   ),
                 ),
                 child: Center(
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     onTap: _pickImage,
                     child: Stack(
                       clipBehavior: Clip.none,
@@ -339,7 +342,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                                   url: widget.phone!.imageUrl,
                                   size: 170,
                                 )
-                              : const Column(
+                              : Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
@@ -356,9 +359,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           right: -4,
                           bottom: -4,
                           child: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(AppSpacing.xs),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF97316),
+                              color: const Color(0xFF3D7BFF),
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
@@ -405,7 +408,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         number: true,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: _field(
                         _stock,
@@ -422,7 +425,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     Expanded(
                       child: _field(_discount, 'Discount (%)', number: true),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.sm),
                     // "New" or e.g. "98%" for 2nd Hand
                     Expanded(child: _field(_condition, 'ស្ថានភាព (New / 98%)')),
                   ],
@@ -432,7 +435,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 Row(
                   children: [
                     Expanded(child: _field(_ram, 'RAM')),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(child: _field(_storage, 'Storage')),
                   ],
                 ),
@@ -472,7 +475,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   'ពណ៌ (បំបែកដោយ , ឧ. Black, Blue, Natural Titanium)',
                 ),
                 for (final color in _colorList) _colorImagePicker(color),
-                if (_colorList.isNotEmpty) const SizedBox(height: 4),
+                if (_colorList.isNotEmpty)
+                  const SizedBox(height: AppSpacing.xxs),
               ]),
               _section(Icons.notes, 'ការពិពណ៌នា', [
                 _field(_description, 'ការពិពណ៌នា', maxLines: 3),
@@ -483,9 +487,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ),
       // Same bottom bar as Checkout: white, rounded, with the orange main button
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppColors.glass,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
           boxShadow: [
             BoxShadow(
               color: Color(0x1A000000),
@@ -496,16 +502,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             child: _isSaving
-                ? const SizedBox(
-                    height: 50,
-                    child: Center(child: CircularProgressIndicator()),
-                  )
+                ? BusyBar(label: trf('កំពុងរក្សាទុក...', 'Saving...'))
                 : FilledButton.icon(
                     onPressed: _save,
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFF97316),
+                      backgroundColor: const Color(0xFF3D7BFF),
                       minimumSize: const Size.fromHeight(50),
                     ),
                     icon: const Icon(Icons.check),
