@@ -1,4 +1,5 @@
 class OrderItem {
+  final int? id;
   final int? productId; // null once the phone has been deleted
   final String productName;
   final String imageUrl;
@@ -6,8 +7,12 @@ class OrderItem {
   final String color; // '' when the phone had no colour options
   final String storage; // '' when the phone had no storage options
   final double price;
+  final List<String> imeis; // one per phone handed over, entered by the shop
+  final int warrantyMonths; // 0 = no warranty
+  final DateTime? warrantyUntil; // null until the order is delivered
 
   OrderItem({
+    this.id,
     this.productId,
     required this.productName,
     required this.imageUrl,
@@ -15,7 +20,17 @@ class OrderItem {
     this.color = '',
     this.storage = '',
     required this.price,
+    this.imeis = const [],
+    this.warrantyMonths = 0,
+    this.warrantyUntil,
   });
+
+  // Days of warranty left (0 once it has ended); null before delivery
+  int? get warrantyDaysLeft {
+    if (warrantyUntil == null) return null;
+    final left = warrantyUntil!.difference(DateTime.now()).inDays;
+    return left < 0 ? 0 : left;
+  }
 
   // "iPhone 15 Pro (Black, 512GB)"
   String get label {
@@ -26,6 +41,7 @@ class OrderItem {
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     final product = json['product'] as Map<String, dynamic>?;
     return OrderItem(
+      id: json['id'],
       productId: json['product_id'],
       productName: product?['name'] ?? 'Deleted product',
       imageUrl: product?['image_url'] ?? '',
@@ -33,6 +49,11 @@ class OrderItem {
       color: json['color'] ?? '',
       storage: json['storage'] ?? '',
       price: double.parse(json['price'].toString()),
+      imeis: [for (final i in (json['imeis'] ?? []) as List) '$i'],
+      warrantyMonths: int.tryParse('${json['warranty_months'] ?? ''}') ?? 0,
+      warrantyUntil: DateTime.tryParse(
+        '${json['warranty_until'] ?? ''}',
+      )?.toLocal(),
     );
   }
 }
@@ -94,6 +115,7 @@ class Order {
   final double shippingFee;
   final double discount;
   final String voucherCode;
+  final DateTime? deliveredAt; // the phones' warranty starts here
 
   Order({
     required this.id,
@@ -122,6 +144,7 @@ class Order {
     this.shippingFee = 0,
     this.discount = 0,
     this.voucherCode = '',
+    this.deliveredAt,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -143,6 +166,9 @@ class Order {
       shippingFee: double.tryParse('${json['shipping_fee'] ?? 0}') ?? 0,
       discount: double.tryParse('${json['discount'] ?? 0}') ?? 0,
       voucherCode: '${json['voucher_code'] ?? ''}',
+      deliveredAt: DateTime.tryParse(
+        '${json['delivered_at'] ?? ''}',
+      )?.toLocal(),
       payBefore: DateTime.tryParse('${json['pay_before'] ?? ''}')?.toLocal(),
       total: double.parse(json['total'].toString()),
       status: json['status'],

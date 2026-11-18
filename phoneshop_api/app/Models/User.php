@@ -40,6 +40,8 @@ class User extends Authenticatable
         'remember_token',
         'google_id',
         'avatar',
+        'favorite_ids',
+        'saved_cart',
     ];
 
     protected $appends = ['avatar_url'];
@@ -54,6 +56,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'favorite_ids' => 'array',
+            'saved_cart' => 'array',
         ];
     }
 

@@ -1,3 +1,4 @@
+import 'warranty_screens.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/order.dart';
 import '../../data/api_service.dart';
@@ -578,7 +579,49 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                   children: [
                     _thumb(item.imageUrl, 40),
                     const SizedBox(width: 10),
-                    Expanded(child: Text('${item.label} × ${item.qty}')),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${item.label} × ${item.qty}'),
+                          for (final imei in item.imeis)
+                            Text(
+                              'IMEI $imei',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          // The IMEI of each phone handed over (warranty desk)
+                          if (!cancelled && item.id != null)
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              onPressed: () async {
+                                final saved = await showImeiSheet(
+                                  context,
+                                  item,
+                                );
+                                if (saved != null) _refresh();
+                              },
+                              icon: Icon(
+                                item.imeis.length >= item.qty
+                                    ? Icons.check_circle
+                                    : Icons.qr_code_scanner,
+                                size: 16,
+                                color: item.imeis.length >= item.qty
+                                    ? AppColors.green
+                                    : AppColors.amber,
+                              ),
+                              label: Text(
+                                'IMEI ${item.imeis.length}/${item.qty}',
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
                       money(item.price * item.qty),

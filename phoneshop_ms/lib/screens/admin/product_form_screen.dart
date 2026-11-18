@@ -38,6 +38,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late final _stock = TextEditingController(
     text: widget.phone?.stock.toString(),
   );
+  late final _warranty = TextEditingController(
+    text: (widget.phone?.warrantyMonths ?? 12).toString(),
+  );
   late final _ram = TextEditingController(text: widget.phone?.ram);
   late final _storage = TextEditingController(text: widget.phone?.storage);
   // "256GB=1199, 512GB=1399"
@@ -86,6 +89,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       _discount,
       _condition,
       _stock,
+      _warranty,
       _ram,
       _storage,
       _storagePrices,
@@ -174,6 +178,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           'discount_percent': _discount.text.trim(),
           'condition': _condition.text.trim(),
           'stock': _stock.text.trim(),
+          'warranty_months': _warranty.text.trim(),
           'ram': _ram.text.trim(),
           'storage': _storage.text.trim(),
           // Sent even when empty, so clearing it goes back to a single size
@@ -430,6 +435,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     Expanded(child: _field(_condition, 'ស្ថានភាព (New / 98%)')),
                   ],
                 ),
+                // How long each phone sold is covered, from the delivery day
+                _field(_warranty, 'ធានា (ខែ) · 0 = គ្មានធានា', number: true),
               ]),
               _section(Icons.memory, 'Spec', [
                 Row(

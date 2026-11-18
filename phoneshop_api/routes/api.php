@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\PaymentAccountController;
 use App\Http\Controllers\Api\Admin\VoucherController;
+use App\Http\Controllers\Api\Admin\WarrantyController;
+use App\Http\Controllers\Api\SavedListsController;
 use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\LiveController;
@@ -42,6 +44,8 @@ Route::post('/guest/orders/{order}/received', [OrderController::class, 'received
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/me/saved', [SavedListsController::class, 'show']);
+    Route::put('/me/saved', [SavedListsController::class, 'update'])->middleware('throttle:60,1');
     Route::post('/logout', [AuthController::class, 'logout']);
     // POST because PHP doesn't parse multipart bodies on PUT
     Route::post('/profile', [AuthController::class, 'updateProfile']);
@@ -75,6 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/vouchers/{voucher}', [VoucherController::class, 'update']);
         Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy']);
         Route::put('/settings/shipping', [VoucherController::class, 'updateShipping']);
+        Route::put('/order-items/{item}/imeis', [WarrantyController::class, 'setImeis']);
+        Route::get('/warranty/{imei}', [WarrantyController::class, 'lookup']);
 
         Route::put('/live', [LiveController::class, 'update']);
         Route::delete('/live/comments/{comment}', [LiveController::class, 'deleteComment']);

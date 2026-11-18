@@ -10,6 +10,7 @@ import 'admin_products_tab.dart';
 import 'admin_live_screen.dart';
 import 'admin_payment_accounts_screen.dart';
 import 'admin_vouchers_screen.dart';
+import 'warranty_screens.dart';
 import '../../hooks/language.dart';
 import '../../theme/app_theme.dart';
 
@@ -197,25 +198,42 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ],
         ),
         actions: [
-          // The banks (ABA, ACLEDA ...) and QR pictures customers pay into
-          IconButton(
-            tooltip: trf('គណនីបង់ប្រាក់', 'Bank accounts'),
-            icon: const Icon(Icons.account_balance_outlined),
-            onPressed: () => Navigator.push(
+          // Shop tools, named, in one menu so the bar fits a phone:
+          // bank QRs, discount codes / delivery prices, warranty by IMEI
+          PopupMenuButton<Widget Function()>(
+            tooltip: trf('ការកំណត់ហាង', 'Shop settings'),
+            icon: const Icon(Icons.storefront_outlined),
+            onSelected: (page) => Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AdminPaymentAccountsScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => page()),
             ),
-          ),
-          // Discount codes and delivery prices
-          IconButton(
-            tooltip: trf('កូដបញ្ចុះ និងថ្លៃដឹក', 'Codes & delivery'),
-            icon: const Icon(Icons.local_offer_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminVouchersScreen()),
-            ),
+            itemBuilder: (_) => [
+              for (final (icon, label, page) in [
+                (
+                  Icons.account_balance_outlined,
+                  trf('គណនីបង់ប្រាក់ KHQR', 'KHQR bank accounts'),
+                  () => const AdminPaymentAccountsScreen(),
+                ),
+                (
+                  Icons.local_offer_outlined,
+                  trf('កូដបញ្ចុះ និងថ្លៃដឹក', 'Codes & delivery'),
+                  () => const AdminVouchersScreen(),
+                ),
+                (
+                  Icons.verified_user_outlined,
+                  trf('ពិនិត្យការធានា (IMEI)', 'Warranty check (IMEI)'),
+                  () => const WarrantyLookupScreen(),
+                ),
+              ])
+                PopupMenuItem<Widget Function()>(
+                  value: page,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(icon),
+                    title: Text(label),
+                  ),
+                ),
+            ],
           ),
           // Start / end a YouTube live shopping session
           IconButton(

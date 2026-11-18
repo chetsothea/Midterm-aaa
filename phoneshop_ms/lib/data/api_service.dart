@@ -173,8 +173,17 @@ class ApiService {
     currentUser = User.fromJson(data['user']);
     // Remembered securely, so the next launch is already logged in
     await SessionStore.save(token!, Map<String, dynamic>.from(data['user']));
+    loggedIn.value++; // AccountSync brings the account's ♥ and cart over
     return currentUser!;
   }
+
+  // Goes up on every login, so others can react (see hooks/account_sync.dart)
+  static final loggedIn = ValueNotifier<int>(0);
+
+  // Runs just before logging out, while the token still works
+  static Future<void> Function()? beforeLogout;
+  // Runs just after logging out
+  static void Function()? afterLogout;
 
   static void _forgetSession() {
     token = null;
@@ -278,13 +287,35 @@ class ApiService {
 
   static Future<void> logout() async {
     try {
+      await beforeLogout?.call();
+    } catch (_) {}
+    try {
       await _post('/logout');
     } catch (_) {
       // Token may already be invalid; log out locally anyway
     }
     _forgetSession();
+    afterLogout?.call();
     await GoogleAuth.signOut();
   }
+
+  // ---------- ♥ and cart kept on the account ----------
+
+  static Future<(List<int>, List<Map<String, dynamic>>)> fetchSaved() async {
+    final Map data = await _get('/me/saved');
+    return _saved(data);
+  }
+
+  static Future<(List<int>, List<Map<String, dynamic>>)> saveSaved(
+    List<int> favorites,
+    List<Map<String, dynamic>> cart,
+  ) async =>
+      _saved(await _put('/me/saved', {'favorites': favorites, 'cart': cart}));
+
+  static (List<int>, List<Map<String, dynamic>>) _saved(dynamic data) => (
+    [for (final id in data['favorites'] as List) (id as num).toInt()],
+    [for (final l in data['cart'] as List) Map<String, dynamic>.from(l)],
+  );
 
   // ---------- Products ----------
 
@@ -668,6 +699,22 @@ class ApiService {
       headers: _headers,
     ),
   );
+
+  // ---------- IMEI and warranty (admin) ----------
+
+  // The IMEIs of one order line; returns them as saved
+  static Future<List<String>> setImeis(int itemId, List<String> imeis) async {
+    final Map data = await _put('/admin/order-items/$itemId/imeis', {
+      'imeis': imeis,
+    });
+    return [for (final i in data['imeis'] as List) '$i'];
+  }
+
+  // Who bought the phone with this IMEI, and until when it is covered
+  static Future<Map<String, dynamic>> lookupWarranty(String imei) async =>
+      Map<String, dynamic>.from(
+        await _get('/admin/warranty/${Uri.encodeComponent(imei)}'),
+      );
 
   // ---------- Vouchers and delivery prices (admin) ----------
 

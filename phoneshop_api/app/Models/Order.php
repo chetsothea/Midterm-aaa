@@ -19,6 +19,7 @@ class Order extends Model
         'customer_hidden_at',
         'bakong_qr', 'bakong_md5', 'bakong_checked_at',
         'subtotal', 'shipping_fee', 'discount', 'voucher_code',
+        'delivered_at',
     ];
 
     protected $casts = ['bakong_checked_at' => 'datetime'];
@@ -55,6 +56,12 @@ class Order extends Model
         static::creating(function (Order $order) {
             $order->code ??= self::newCode();
         });
+        // The warranty of the phones starts the day the order is delivered
+        static::saving(function (Order $order) {
+            if ($order->status === 'delivered' && ! $order->delivered_at) {
+                $order->delivered_at = now();
+            }
+        });
     }
 
     // Only sent once, in the guest checkout response
@@ -81,6 +88,7 @@ class Order extends Model
             'shipping_fee' => 'float',
             'discount' => 'float',
             'received_at' => 'datetime',
+            'delivered_at' => 'datetime',
             'received_seen_at' => 'datetime',
             'customer_hidden_at' => 'datetime',
         ];
@@ -93,7 +101,9 @@ class Order extends Model
 
     public function items()
     {
-        return $this->hasMany(OrderItem::class);
+        // chaperone: each item knows its order without asking the database again
+        // (its warranty date comes from the order's delivery day)
+        return $this->hasMany(OrderItem::class)->chaperone();
     }
 
     // Newest step first, the way the customer reads it

@@ -27,6 +27,23 @@ class Favorites extends ChangeNotifier {
     }
   }
 
+  // From the account at login: keeps this phone's ♥ and adds the account's
+  void merge(Iterable<int> ids) {
+    final before = _ids.length;
+    _ids.addAll(ids);
+    if (_ids.length != before) {
+      notifyListeners();
+      _save();
+    }
+  }
+
+  // At logout: they stay on the account, not on this phone
+  void clearAll() {
+    _ids.clear();
+    notifyListeners();
+    _save();
+  }
+
   void toggle(int phoneId) {
     if (!_ids.remove(phoneId)) _ids.add(phoneId);
     notifyListeners();

@@ -1,3 +1,4 @@
+import 'hooks/account_sync.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,7 @@ void main() async {
   await ApiService.findHost(); // emulator, USB phone or Wi-Fi phone
   await ApiService.restoreSession(); // still logged in from last time
   await Cart.instance.load(); // and the phones left in the cart
+  AccountSync.start(); // ♥ and cart follow the account to other devices
   runApp(
     DevicePreview(
       enabled: _showDevicePreview,

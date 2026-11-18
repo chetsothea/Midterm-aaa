@@ -21,6 +21,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'discount_percent' => 'nullable|numeric|min:0|max:99',
             'condition' => 'nullable|string|max:20',
+            'warranty_months' => 'nullable|integer|min:0|max:120',
             'stock' => 'required|integer|min:0',
             'ram' => 'nullable|string|max:20',
             'storage' => 'nullable|string|max:255',
@@ -116,6 +117,9 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate($this->rules());
+        if (array_key_exists('warranty_months', $data) && $data['warranty_months'] === null) {
+            unset($data['warranty_months']); // left empty: keep the 12-month default
+        }
         unset($data['color_images']);
         $data = $this->applyStoragePrices($data);
         $data['image'] = $this->saveImage($request);
@@ -130,6 +134,9 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $data = $request->validate($this->rules());
+        if (array_key_exists('warranty_months', $data) && $data['warranty_months'] === null) {
+            unset($data['warranty_months']); // left empty: keep the 12-month default
+        }
         unset($data['color_images']);
         $data = $this->applyStoragePrices($data);
 

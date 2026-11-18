@@ -37,6 +37,7 @@ class Phone {
   final Map<String, String>
   colorImageUrls; // picture per colour, e.g. {"Blue": "http://..."}
   final List<StorageOption> storageOptions; // empty = one size at [price]
+  final int warrantyMonths; // 0 = sold without warranty
   final double ratingAverage; // 0 when nobody has reviewed it
   final int ratingCount;
 
@@ -56,6 +57,7 @@ class Phone {
     required this.imageUrl,
     this.colorImageUrls = const {},
     this.storageOptions = const [],
+    this.warrantyMonths = 12,
     this.ratingAverage = 0,
     this.ratingCount = 0,
   });
@@ -105,6 +107,7 @@ class Phone {
           ? 'New'
           : json['condition'],
       stock: int.tryParse(json['stock'].toString()) ?? 0,
+      warrantyMonths: int.tryParse('${json['warranty_months'] ?? ''}') ?? 12,
       ram: json['ram'] ?? '',
       storage: json['storage'] ?? '',
       color: json['color'] ?? '',

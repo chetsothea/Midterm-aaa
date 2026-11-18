@@ -104,6 +104,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 '${money(item.price)} × ${item.qty}',
                 style: TextStyle(fontSize: 13, color: _muted),
               ),
+              for (final imei in item.imeis)
+                Text(
+                  'IMEI $imei',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _muted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              if (item.warrantyMonths > 0) _warranty(item),
             ],
           ),
         ),
@@ -115,6 +125,50 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       ],
     ),
   );
+
+  // "Under warranty until 18/05/2027 (181 days left)", or how long it will be
+  Widget _warranty(OrderItem item) {
+    final until = item.warrantyUntil;
+    final left = item.warrantyDaysLeft;
+    final active = left != null && left > 0;
+    final color = until == null
+        ? _muted
+        : active
+        ? const Color(0xFF1E9E4A)
+        : AppColors.red;
+    String day(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    final text = until == null
+        ? trf(
+            'ធានា ${item.warrantyMonths} ខែ ចាប់ពីថ្ងៃទទួលឥវ៉ាន់',
+            '${item.warrantyMonths}-month warranty from delivery',
+          )
+        : active
+        ? trf(
+            'ធានាដល់ ${day(until)} (នៅសល់ $left ថ្ងៃ)',
+            'Warranty until ${day(until)} ($left days left)',
+          )
+        : trf('ផុតធានា ${day(until)}', 'Warranty ended ${day(until)}');
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        children: [
+          Icon(Icons.verified_user_outlined, size: 14, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // 05/11/2026 10:30, in the reader's own time
   static String _when(DateTime time) {

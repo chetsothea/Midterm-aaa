@@ -51,6 +51,8 @@ class PhoneCatalogSeeder extends Seeder
                 'stock' => $phone['stock'],
                 'color' => implode(', ', $phone['colors']),
                 'description' => $phone['description'],
+                // New phones: 12 months. Used ones carry the shop's 3-month warranty
+                'warranty_months' => $phone['condition'] === 'New' ? 12 : 3,
             ]);
 
             $images = $phone['images'] ?? [];

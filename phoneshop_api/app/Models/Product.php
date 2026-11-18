@@ -9,6 +9,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'name', 'brand', 'price', 'discount_percent', 'condition', 'stock',
         'ram', 'storage', 'storage_prices', 'color', 'description', 'image', 'color_images',
+        'warranty_months',
     ];
 
     protected $hidden = ['image', 'color_images'];

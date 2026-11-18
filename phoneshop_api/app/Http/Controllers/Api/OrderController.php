@@ -136,6 +136,7 @@ class OrderController extends Controller
                 'color' => $colors ? $color : null,
                 'storage' => $storage,
                 'price' => $price,
+                'warranty_months' => $product->warranty_months,
             ];
         }
 

@@ -49,22 +49,17 @@ class Cart extends ChangeNotifier {
   Future<void> _save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _storeKey,
-        jsonEncode([
-          for (final i in _items.values)
-            {
-              'id': i.phone.id,
-              'color': i.color,
-              'storage': i.storage,
-              'qty': i.qty,
-            },
-        ]),
-      );
+      await prefs.setString(_storeKey, jsonEncode(toSaved()));
     } catch (_) {
       // No storage (tests, private browsing): the cart just isn't remembered
     }
   }
+
+  // The cart as plain lines, as saved on the phone and on the account
+  List<Map<String, dynamic>> toSaved() => [
+    for (final i in _items.values)
+      {'id': i.phone.id, 'color': i.color, 'storage': i.storage, 'qty': i.qty},
+  ];
 
   // At launch: put back the saved cart with today's prices and stock.
   // Phones that were deleted or sold out are dropped, and a quantity larger
@@ -76,34 +71,66 @@ class Cart extends ChangeNotifier {
       if (raw == null || raw.isEmpty) return;
       final saved = List<Map<String, dynamic>>.from(jsonDecode(raw));
       if (saved.isEmpty) return;
-      final phones = {
-        for (final p in await ApiService.fetchPhones().timeout(
-          const Duration(seconds: 8),
-        ))
-          p.id: p,
-      };
-      _loading = true;
-      _items.clear();
-      for (final s in saved) {
-        final phone = phones[s['id']];
-        if (phone == null || phone.stock <= 0) continue;
-        final left = phone.stock - qtyOf(phone.id);
-        final qty = (s['qty'] as num).toInt().clamp(0, left);
-        if (qty <= 0) continue;
-        final item = CartItem(
-          phone,
-          '${s['color'] ?? ''}',
-          '${s['storage'] ?? ''}',
-          qty,
-        );
-        _items[item.key] = item;
-      }
+      await _restore(saved, replace: true);
     } catch (_) {
       // Offline or bad data: start with the cart as it is
+    }
+  }
+
+  // At login: adds the account's lines to what is already in the cart here
+  // (a line in both keeps the larger quantity). Same stock rules as load().
+  Future<void> mergeSaved(List<Map<String, dynamic>> saved) async {
+    if (saved.isEmpty) return;
+    try {
+      await _restore(saved, replace: false);
+    } catch (_) {
+      // Offline: the account's cart comes over next time
+    }
+  }
+
+  Future<void> _restore(
+    List<Map<String, dynamic>> saved, {
+    required bool replace,
+  }) async {
+    final phones = {
+      for (final p in await ApiService.fetchPhones().timeout(
+        const Duration(seconds: 8),
+      ))
+        p.id: p,
+    };
+    _loading = true;
+    try {
+      if (replace) {
+        _items.clear();
+      } else {
+        // Lines already here get today's price and stock too
+        for (final key in _items.keys.toList()) {
+          final fresh = phones[_items[key]!.phone.id];
+          if (fresh == null) {
+            _items.remove(key);
+          } else {
+            final old = _items[key]!;
+            _items[key] = CartItem(fresh, old.color, old.storage, old.qty);
+          }
+        }
+      }
+      for (final s in saved) {
+        final phone = phones[(s['id'] as num).toInt()];
+        if (phone == null || phone.stock <= 0) continue;
+        final color = '${s['color'] ?? ''}';
+        final storage = '${s['storage'] ?? ''}';
+        final key = keyFor(phone.id, color, storage);
+        final here = _items[key]?.qty ?? 0;
+        final wanted = (s['qty'] as num).toInt();
+        if (wanted <= here) continue;
+        final left = phone.stock - qtyOf(phone.id) + here;
+        final qty = wanted.clamp(0, left);
+        if (qty <= 0) continue;
+        _items[key] = CartItem(phone, color, storage, qty);
+      }
     } finally {
-      final wasLoading = _loading;
       _loading = false;
-      if (wasLoading) notifyListeners(); // saves the cleaned-up cart
+      notifyListeners(); // saves the cleaned-up cart
     }
   }
 
