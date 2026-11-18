@@ -9,6 +9,7 @@ import 'admin_orders_tab.dart';
 import 'admin_products_tab.dart';
 import 'admin_live_screen.dart';
 import 'admin_payment_accounts_screen.dart';
+import 'admin_vouchers_screen.dart';
 import '../../hooks/language.dart';
 import '../../theme/app_theme.dart';
 
@@ -205,6 +206,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               MaterialPageRoute(
                 builder: (_) => const AdminPaymentAccountsScreen(),
               ),
+            ),
+          ),
+          // Discount codes and delivery prices
+          IconButton(
+            tooltip: trf('កូដបញ្ចុះ និងថ្លៃដឹក', 'Codes & delivery'),
+            icon: const Icon(Icons.local_offer_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminVouchersScreen()),
             ),
           ),
           // Start / end a YouTube live shopping session

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/api_service.dart';
+import '../data/models/voucher.dart';
 import '../hooks/cart.dart';
 import '../components/address_picker.dart';
 import '../components/buying_steps.dart';
@@ -35,6 +36,78 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _paymentMethod = 'khqr';
   bool _isLoading = false;
 
+  // Price from the server: phones, delivery for this address, and the code
+  Quote? _quote;
+  int _quoteRun = 0; // only the newest answer counts
+  final _voucher = TextEditingController();
+  String _appliedCode = '';
+  String? _voucherError;
+  bool _checkingCode = false;
+
+  String get _currentAddress =>
+      _useSavedAddress ? _savedAddress : (_address ?? '');
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshQuote();
+  }
+
+  // Asks the server again (address or code changed). A code that no longer
+  // works is dropped with its reason, and the price falls back to no code.
+  Future<void> _refreshQuote({String? tryCode}) async {
+    final run = ++_quoteRun;
+    final code = tryCode ?? _appliedCode;
+    try {
+      final quote = await ApiService.quote(
+        items: Cart.instance.toOrderItems(),
+        address: _currentAddress,
+        voucherCode: code,
+      );
+      if (!mounted || run != _quoteRun) return;
+      setState(() {
+        _quote = quote;
+        _appliedCode = quote.voucherCode;
+        _voucherError = null;
+      });
+      if (tryCode != null && quote.voucherCode.isNotEmpty) {
+        Haptics.success();
+      }
+    } on ApiException catch (e) {
+      if (!mounted || run != _quoteRun) return;
+      if (code.isNotEmpty) {
+        setState(() {
+          _voucherError = e.message;
+          _appliedCode = '';
+        });
+        if (tryCode == null) _refreshQuote(); // price without the dead code
+      }
+    } catch (_) {
+      // Offline or mock mode: the cart total is shown instead
+    }
+  }
+
+  Future<void> _applyCode() async {
+    final code = _voucher.text.trim().toUpperCase();
+    if (code.isEmpty) {
+      setState(() => _voucherError = trf('សូមបញ្ចូលកូដ', 'Enter a code'));
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() => _checkingCode = true);
+    await _refreshQuote(tryCode: code);
+    if (mounted) setState(() => _checkingCode = false);
+  }
+
+  void _removeCode() {
+    setState(() {
+      _appliedCode = '';
+      _voucher.clear();
+      _voucherError = null;
+    });
+    _refreshQuote();
+  }
+
   void _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -47,6 +120,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         phone: _phone.text.trim(),
         // With the picker on screen, validate() above made sure every level is picked
         address: _useSavedAddress ? _savedAddress : _address!,
+        voucherCode: _appliedCode,
       );
       Cart.instance.clear();
       if (!mounted) return;
@@ -79,7 +153,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _email, _phone]) {
+    for (final c in [_name, _email, _phone, _voucher]) {
       c.dispose();
     }
     super.dispose();
@@ -278,6 +352,158 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  // Code field, or the applied code as a chip that can be taken off
+  Widget _voucherBox() {
+    if (_appliedCode.isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+        decoration: BoxDecoration(
+          color: AppColors.green.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.green.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.local_offer, size: 20, color: AppColors.green),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                trf(
+                  '$_appliedCode · បញ្ចុះ ${_quote?.voucherLabel ?? ''}',
+                  '$_appliedCode · ${_quote?.voucherLabel ?? ''} off',
+                ),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: trf('ដកកូដចេញ', 'Remove code'),
+              onPressed: _removeCode,
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _voucher,
+            textCapitalization: TextCapitalization.characters,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _applyCode(),
+            decoration: _decor(
+              trf('កូដបញ្ចុះតម្លៃ (បើមាន)', 'Discount code (optional)'),
+              Icons.local_offer_outlined,
+            ).copyWith(errorText: _voucherError, errorMaxLines: 2),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        SizedBox(
+          height: 56,
+          child: OutlinedButton(
+            onPressed: _checkingCode ? null : _applyCode,
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+            child: _checkingCode
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(trf('ប្រើ', 'Apply')),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _priceRow(
+    String label,
+    String value, {
+    Color? color,
+    bool bold = false,
+  }) {
+    final style = TextStyle(
+      color: color ?? (bold ? AppColors.text : AppColors.muted),
+      fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+      fontSize: bold ? 16 : 14,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          Text(value, style: style),
+        ],
+      ),
+    );
+  }
+
+  // Phones, delivery, discount and total, as the server priced them
+  Widget _summary(double cartTotal) {
+    final q = _quote;
+    final hasAddress = _currentAddress.isNotEmpty;
+    final more = q?.moreForFreeDelivery;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _priceRow(trf('ទំនិញ', 'Phones'), money(q?.subtotal ?? cartTotal)),
+        _priceRow(
+          q == null || !hasAddress
+              ? trf('ថ្លៃដឹកជញ្ជូន', 'Delivery')
+              : q.phnomPenh
+              ? trf('ថ្លៃដឹក (ភ្នំពេញ)', 'Delivery (Phnom Penh)')
+              : trf('ថ្លៃដឹក (ខេត្ត)', 'Delivery (province)'),
+          q == null
+              ? '—'
+              : !hasAddress
+              ? trf('ជ្រើសទីតាំងសិន', 'Pick an address')
+              : q.shippingFee == 0
+              ? trf('ឥតគិតថ្លៃ', 'Free')
+              : money(q.shippingFee),
+          color: q != null && hasAddress && q.shippingFee == 0
+              ? AppColors.green
+              : null,
+        ),
+        if ((q?.discount ?? 0) > 0)
+          _priceRow(
+            trf(
+              'បញ្ចុះតម្លៃ (${q!.voucherCode})',
+              'Discount (${q.voucherCode})',
+            ),
+            '-${money(q.discount)}',
+            color: AppColors.green,
+          ),
+        Divider(height: AppSpacing.md, color: AppColors.line),
+        _priceRow(
+          trf('សរុប', 'Total'),
+          money(q?.total ?? cartTotal),
+          bold: true,
+        ),
+        if (more != null && hasAddress)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xxs),
+            child: Text(
+              trf(
+                'ទិញបន្ថែម ${money(more)} ទៀត ដើម្បីដឹកឥតគិតថ្លៃ',
+                'Spend ${money(more)} more for free delivery',
+              ),
+              style: TextStyle(color: AppColors.accent, fontSize: 13),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = Cart.instance;
@@ -361,9 +587,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton.icon(
-                            onPressed: () => setState(() {
-                              _useSavedAddress = false;
-                            }),
+                            onPressed: () {
+                              setState(() => _useSavedAddress = false);
+                              _refreshQuote();
+                            },
                             icon: const Icon(
                               Icons.edit_location_alt_outlined,
                               size: 18,
@@ -375,18 +602,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   )
                 else ...[
-                  AddressPicker(onChanged: (address) => _address = address),
+                  AddressPicker(
+                    onChanged: (address) {
+                      _address = address;
+                      _refreshQuote();
+                    },
+                  ),
                   if (_savedAddress.isNotEmpty)
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => setState(() {
-                          _useSavedAddress = true;
-                        }),
+                        onPressed: () {
+                          setState(() => _useSavedAddress = true);
+                          _refreshQuote();
+                        },
                         child: Text(tr('ប្រើទីតាំងដែលបានរក្សាទុក')),
                       ),
                     ),
                 ],
+              ]),
+              _section(4, trf('កូដបញ្ចុះតម្លៃ និងសរុប', 'Code and total'), [
+                _voucherBox(),
+                const SizedBox(height: AppSpacing.sm),
+                _summary(cart.total),
               ]),
             ]),
           ),
@@ -441,7 +679,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         Text(
-                          money(cart.total),
+                          money(_quote?.total ?? cart.total),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,

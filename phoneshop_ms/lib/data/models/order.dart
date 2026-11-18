@@ -88,6 +88,12 @@ class Order {
   final DateTime? payBefore;
   // This order's own Bakong KHQR, with its amount in it ('' when Bakong is off)
   final String bakongQr;
+  // Phones only (null on orders from before delivery fees), delivery, and
+  // what a discount code took off; total = subtotal - discount + shippingFee
+  final double? subtotal;
+  final double shippingFee;
+  final double discount;
+  final String voucherCode;
 
   Order({
     required this.id,
@@ -112,6 +118,10 @@ class Order {
     this.receivedSeen = false,
     this.payBefore,
     this.bakongQr = '',
+    this.subtotal,
+    this.shippingFee = 0,
+    this.discount = 0,
+    this.voucherCode = '',
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -127,6 +137,12 @@ class Order {
       receivedAt: DateTime.tryParse(json['received_at'] ?? '')?.toLocal(),
       receivedSeen: json['received_seen_at'] != null,
       bakongQr: '${json['bakong_qr'] ?? ''}',
+      subtotal: json['subtotal'] == null
+          ? null
+          : double.parse(json['subtotal'].toString()),
+      shippingFee: double.tryParse('${json['shipping_fee'] ?? 0}') ?? 0,
+      discount: double.tryParse('${json['discount'] ?? 0}') ?? 0,
+      voucherCode: '${json['voucher_code'] ?? ''}',
       payBefore: DateTime.tryParse('${json['pay_before'] ?? ''}')?.toLocal(),
       total: double.parse(json['total'].toString()),
       status: json['status'],

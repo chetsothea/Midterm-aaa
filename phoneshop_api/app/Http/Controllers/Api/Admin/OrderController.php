@@ -69,6 +69,7 @@ class OrderController extends Controller
                 foreach ($order->items as $item) {
                     $item->product?->increment('stock', $item->qty);
                 }
+                $order->releaseVoucher();
             }
             $order->delete();
         });

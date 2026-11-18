@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'models/voucher.dart';
 import 'models/customer.dart';
 import 'models/live.dart';
 import 'models/location.dart';
@@ -360,6 +361,7 @@ class ApiService {
     required String customerEmail,
     required String phone,
     required String address,
+    String voucherCode = '',
   }) async {
     final data = await _post('/orders', {
       'customer_name': customerName,
@@ -368,9 +370,26 @@ class ApiService {
       'address': address,
       'payment_method': paymentMethod,
       'items': items,
+      if (voucherCode.isNotEmpty) 'voucher_code': voucherCode,
     });
     return Order.fromJson(data);
   }
+
+  // What the order will cost with delivery and a code, before placing it.
+  // A bad code throws ApiException with the reason ("កូដនេះផុតកំណត់ហើយ").
+  static Future<Quote> quote({
+    required List<Map<String, dynamic>> items,
+    String address = '',
+    String voucherCode = '',
+  }) async => Quote.fromJson(
+    Map<String, dynamic>.from(
+      await _post('/orders/quote', {
+        'items': items,
+        'address': address,
+        if (voucherCode.isNotEmpty) 'voucher_code': voucherCode,
+      }),
+    ),
+  );
 
   // The account's orders, plus any placed as a guest in this session (newest first)
   static Future<List<Order>> fetchMyOrders() async {
@@ -649,6 +668,44 @@ class ApiService {
       headers: _headers,
     ),
   );
+
+  // ---------- Vouchers and delivery prices (admin) ----------
+
+  static Future<(List<Voucher>, ShippingRates)> fetchVouchers() async {
+    final Map data = await _get('/admin/vouchers');
+    return (
+      [
+        for (final e in data['vouchers'] as List)
+          Voucher.fromJson(Map<String, dynamic>.from(e)),
+      ],
+      ShippingRates.fromJson(Map<String, dynamic>.from(data['shipping'])),
+    );
+  }
+
+  static Future<Voucher> saveVoucher(Voucher voucher) async {
+    final data = voucher.id == null
+        ? await _post('/admin/vouchers', voucher.toJson())
+        : await _put('/admin/vouchers/${voucher.id}', voucher.toJson());
+    return Voucher.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  static Future<void> deleteVoucher(int id) async => _handle(
+    await http.delete(
+      Uri.parse('$baseUrl/admin/vouchers/$id'),
+      headers: _headers,
+    ),
+  );
+
+  static Future<ShippingRates> saveShipping(ShippingRates rates) async =>
+      ShippingRates.fromJson(
+        Map<String, dynamic>.from(
+          await _put('/admin/settings/shipping', {
+            'phnom_penh': rates.phnomPenh,
+            'province': rates.province,
+            'free_over': rates.freeOver,
+          }),
+        ),
+      );
 
   // ---------- Live shopping ----------
 

@@ -348,6 +348,36 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       ],
                     ),
                   ),
+                  // Delivery and discount (orders from before fees have neither)
+                  if (order.subtotal != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
+                      child: Column(
+                        children: [
+                          Divider(height: 1, color: AppColors.line),
+                          const SizedBox(height: 6),
+                          _charge(
+                            trf('ទំនិញ', 'Phones'),
+                            money(order.subtotal!),
+                          ),
+                          _charge(
+                            trf('ថ្លៃដឹកជញ្ជូន', 'Delivery'),
+                            order.shippingFee == 0
+                                ? trf('ឥតគិតថ្លៃ', 'Free')
+                                : money(order.shippingFee),
+                          ),
+                          if (order.discount > 0)
+                            _charge(
+                              trf(
+                                'បញ្ចុះតម្លៃ (${order.voucherCode})',
+                                'Discount (${order.voucherCode})',
+                              ),
+                              '-${money(order.discount)}',
+                              color: const Color(0xFF1E9E4A),
+                            ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: AppSpacing.xs),
                   // The total, highlighted, with a "paid" stamp once the money is in
                   Container(
@@ -457,6 +487,23 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _charge(String label, String value, {Color? color}) {
+    final style = TextStyle(
+      color: color ?? _muted,
+      fontWeight: FontWeight.w600,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          Text(value, style: style),
+        ],
       ),
     );
   }

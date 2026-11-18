@@ -18,6 +18,7 @@ class Order extends Model
         'customer_number',
         'customer_hidden_at',
         'bakong_qr', 'bakong_md5', 'bakong_checked_at',
+        'subtotal', 'shipping_fee', 'discount', 'voucher_code',
     ];
 
     protected $casts = ['bakong_checked_at' => 'datetime'];
@@ -76,6 +77,9 @@ class Order extends Model
     {
         return [
             'total' => 'float',
+            'subtotal' => 'float',
+            'shipping_fee' => 'float',
+            'discount' => 'float',
             'received_at' => 'datetime',
             'received_seen_at' => 'datetime',
             'customer_hidden_at' => 'datetime',
@@ -115,10 +119,19 @@ class Order extends Model
             foreach ($this->items as $item) {
                 $item->product?->increment('stock', $item->qty);
             }
+            $this->releaseVoucher();
 
             $this->update(['status' => 'cancelled']);
             $this->track(null, $note);
         });
+    }
+
+    // A cancelled order gives its discount code back
+    public function releaseVoucher(): void
+    {
+        if ($this->voucher_code) {
+            Voucher::where('code', $this->voucher_code)->where('used_count', '>', 0)->decrement('used_count');
+        }
     }
 
     // A KHQR order holds its phones only this long while nobody has paid

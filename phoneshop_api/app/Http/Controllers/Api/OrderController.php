@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Voucher;
 use App\Services\Bakong\BakongUnavailable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,70 +52,144 @@ class OrderController extends Controller
             'items.*.qty' => 'required|integer|min:1',
             'items.*.color' => 'nullable|string|max:30',
             'items.*.storage' => 'nullable|string|max:20',
+            'voucher_code' => 'nullable|string|max:30',
         ]);
+    }
+
+    // What the order will cost before it is placed: phones, delivery fee and
+    // any code, all worked out here from the database, never by the app
+    public function quote(Request $request)
+    {
+        $data = $request->validate([
+            'address' => 'nullable|string|max:500',
+            'voucher_code' => 'nullable|string|max:30',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|integer|exists:products,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.color' => 'nullable|string|max:30',
+            'items.*.storage' => 'nullable|string|max:20',
+        ]);
+
+        [, $subtotal] = $this->priceLines($data['items'], false);
+        $charges = $this->charges($subtotal, $data['address'] ?? '', $data['voucher_code'] ?? null, $request->user()->id, false);
+
+        return [
+            'subtotal' => $subtotal,
+            'discount' => $charges['discount'],
+            'voucher_code' => $charges['voucher']?->code,
+            'voucher_label' => $charges['voucher']?->label,
+            'shipping_fee' => $charges['shipping_fee'],
+            'shipping_zone' => \App\Support\Shipping::isPhnomPenh($data['address'] ?? '') ? 'phnom_penh' : 'province',
+            'total' => $charges['total'],
+            'shipping' => \App\Support\Shipping::rates(),
+        ];
+    }
+
+    // The order's phones at today's prices. With $reserve the rows are locked
+    // and the stock taken, so two customers can't buy the last unit together.
+    private function priceLines(array $items, bool $reserve): array
+    {
+        $subtotal = 0;
+        $lines = [];
+
+        foreach ($items as $item) {
+            $product = $reserve
+                ? Product::lockForUpdate()->find($item['product_id'])
+                : Product::find($item['product_id']);
+
+            if ($product->stock < $item['qty']) {
+                throw ValidationException::withMessages([
+                    'items' => "{$product->name} នៅសល់តែ {$product->stock} គ្រឿងប៉ុណ្ណោះ",
+                ]);
+            }
+
+            // The colour must be one the product is sold in
+            $color = $item['color'] ?? null;
+            $colors = $product->colorOptions();
+            if ($colors && ! in_array($color, $colors, true)) {
+                throw ValidationException::withMessages([
+                    'items' => "សូមជ្រើសពណ៌សម្រាប់ {$product->name}",
+                ]);
+            }
+
+            // Products sold in several sizes are priced by the size picked
+            $storage = null;
+            $price = $product->salePrice();
+            if ($product->storage_prices) {
+                $storage = $item['storage'] ?? null;
+                $price = $product->priceForStorage($storage);
+                if ($price === null) {
+                    throw ValidationException::withMessages([
+                        'items' => "សូមជ្រើស Storage សម្រាប់ {$product->name}",
+                    ]);
+                }
+            }
+
+            if ($reserve) {
+                $product->decrement('stock', $item['qty']);
+            }
+            // Price comes from the database, never from the app
+            $subtotal += $price * $item['qty'];
+            $lines[] = [
+                'product_id' => $product->id,
+                'qty' => $item['qty'],
+                'color' => $colors ? $color : null,
+                'storage' => $storage,
+                'price' => $price,
+            ];
+        }
+
+        return [$lines, round($subtotal, 2)];
+    }
+
+    // Discount from the code (checked), then the delivery fee on what is left
+    private function charges(float $subtotal, string $address, ?string $code, ?int $userId, bool $lock): array
+    {
+        $voucher = null;
+        $discount = 0.0;
+        if (Voucher::normalize($code) !== '') {
+            $voucher = Voucher::findCode($code, $lock);
+            $problem = $voucher ? $voucher->problemFor($subtotal, $userId) : 'រកមិនឃើញកូដនេះទេ';
+            if ($problem) {
+                throw ValidationException::withMessages(['voucher_code' => $problem]);
+            }
+            $discount = $voucher->discountFor($subtotal);
+        }
+
+        $fee = \App\Support\Shipping::feeFor($address, $subtotal - $discount);
+
+        return [
+            'voucher' => $voucher,
+            'discount' => $discount,
+            'shipping_fee' => $fee,
+            'total' => round($subtotal - $discount + $fee, 2),
+        ];
     }
 
     private function placeOrder(array $data, int $userId): Order
     {
         $order = DB::transaction(function () use ($data, $userId) {
-            $total = 0;
-            $lines = [];
-
-            foreach ($data['items'] as $item) {
-                // Lock the row so two customers can't buy the last unit at the same time
-                $product = Product::lockForUpdate()->find($item['product_id']);
-
-                if ($product->stock < $item['qty']) {
-                    throw ValidationException::withMessages([
-                        'items' => "{$product->name} នៅសល់តែ {$product->stock} គ្រឿងប៉ុណ្ណោះ",
-                    ]);
-                }
-
-                // The colour must be one the product is sold in
-                $color = $item['color'] ?? null;
-                $colors = $product->colorOptions();
-                if ($colors && ! in_array($color, $colors, true)) {
-                    throw ValidationException::withMessages([
-                        'items' => "សូមជ្រើសពណ៌សម្រាប់ {$product->name}",
-                    ]);
-                }
-
-                // Products sold in several sizes are priced by the size picked
-                $storage = null;
-                $price = $product->salePrice();
-                if ($product->storage_prices) {
-                    $storage = $item['storage'] ?? null;
-                    $price = $product->priceForStorage($storage);
-                    if ($price === null) {
-                        throw ValidationException::withMessages([
-                            'items' => "សូមជ្រើស Storage សម្រាប់ {$product->name}",
-                        ]);
-                    }
-                }
-
-                $product->decrement('stock', $item['qty']);
-                // Price comes from the database, never from the app
-                $total += $price * $item['qty'];
-                $lines[] = [
-                    'product_id' => $product->id,
-                    'qty' => $item['qty'],
-                    'color' => $colors ? $color : null,
-                    'storage' => $storage,
-                    'price' => $price,
-                ];
-            }
+            [$lines, $subtotal] = $this->priceLines($data['items'], true);
 
             // The customer's own count: locking their account row means two orders
             // placed at the same moment can't get the same number
             User::lockForUpdate()->find($userId);
             $number = (int) Order::where('user_id', $userId)->max('customer_number') + 1;
 
+            // After the account lock, so the "once per customer" check can't race
+            $charges = $this->charges($subtotal, $data['address'], $data['voucher_code'] ?? null, $userId, true);
+            $charges['voucher']?->increment('used_count');
+
             $order = Order::create([
                 'user_id' => $userId,
                 'customer_number' => $number,
                 'customer_name' => $data['customer_name'],
                 'customer_email' => $data['customer_email'],
-                'total' => $total,
+                'subtotal' => $subtotal,
+                'discount' => $charges['discount'],
+                'voucher_code' => $charges['voucher']?->code,
+                'shipping_fee' => $charges['shipping_fee'],
+                'total' => $charges['total'],
                 'payment_method' => $data['payment_method'],
                 'phone' => $data['phone'],
                 'address' => $data['address'],

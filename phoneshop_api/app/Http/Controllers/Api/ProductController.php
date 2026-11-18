@@ -109,6 +109,11 @@ class ProductController extends Controller
     {
         $accounts = PaymentAccount::forCustomers();
 
-        return [...$accounts[0], 'accounts' => $accounts, 'bakong' => Bakong::enabled()];
+        return [
+            ...$accounts[0],
+            'accounts' => $accounts,
+            'bakong' => Bakong::enabled(),
+            'shipping' => \App\Support\Shipping::rates(),
+        ];
     }
 }

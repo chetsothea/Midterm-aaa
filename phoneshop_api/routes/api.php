@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\PaymentAccountController;
+use App\Http\Controllers\Api\Admin\VoucherController;
 use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\LiveController;
@@ -51,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{order}/pay', [OrderController::class, 'pay']);
     Route::get('/orders/{order}/check-payment', [OrderController::class, 'checkPayment'])->middleware('throttle:40,1');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+    Route::post('/orders/quote', [OrderController::class, 'quote'])->middleware('throttle:60,1');
     Route::delete('/orders/{order}', [OrderController::class, 'hide']);
     Route::post('/orders/{order}/received', [OrderController::class, 'received']);
 
@@ -68,6 +70,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/payment-accounts/{paymentAccount}', [PaymentAccountController::class, 'update']);
         Route::delete('/payment-accounts/{paymentAccount}', [PaymentAccountController::class, 'destroy']);
         Route::put('/settings/low-stock', [AdminOrderController::class, 'updateLowStockThreshold']);
+        Route::get('/vouchers', [VoucherController::class, 'index']);
+        Route::post('/vouchers', [VoucherController::class, 'store']);
+        Route::put('/vouchers/{voucher}', [VoucherController::class, 'update']);
+        Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy']);
+        Route::put('/settings/shipping', [VoucherController::class, 'updateShipping']);
 
         Route::put('/live', [LiveController::class, 'update']);
         Route::delete('/live/comments/{comment}', [LiveController::class, 'deleteComment']);
