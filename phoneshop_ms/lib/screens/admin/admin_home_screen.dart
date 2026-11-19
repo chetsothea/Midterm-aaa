@@ -10,6 +10,8 @@ import 'admin_products_tab.dart';
 import 'admin_live_screen.dart';
 import 'admin_payment_accounts_screen.dart';
 import 'admin_reports_screen.dart';
+import 'admin_activity_screen.dart';
+import 'admin_reviews_screen.dart';
 import 'admin_staff_screen.dart';
 import 'admin_trade_ins_screen.dart';
 import 'admin_vouchers_screen.dart';
@@ -225,6 +227,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     Icons.swap_horiz_rounded,
                     trf('Trade-in (ទូរស័ព្ទចាស់)', 'Trade-ins'),
                     () => const AdminTradeInsScreen(),
+                  ),
+                  (
+                    Icons.star_outline_rounded,
+                    trf('ការវាយតម្លៃ', 'Reviews'),
+                    () => const AdminReviewsScreen(),
+                  ),
+                  (
+                    Icons.history,
+                    trf('កំណត់ត្រាសកម្មភាព', 'Activity log'),
+                    () => const AdminActivityScreen(),
                   ),
                   (
                     Icons.badge_outlined,

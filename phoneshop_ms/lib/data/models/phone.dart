@@ -37,6 +37,8 @@ class Phone {
   final Map<String, String>
   colorImageUrls; // picture per colour, e.g. {"Blue": "http://..."}
   final List<StorageOption> storageOptions; // empty = one size at [price]
+  // Stock per colour and size, {"Blue|256GB": 3}; null = one shared [stock]
+  final Map<String, int>? variantStock;
   final int warrantyMonths; // 0 = sold without warranty
   final double ratingAverage; // 0 when nobody has reviewed it
   final int ratingCount;
@@ -57,6 +59,7 @@ class Phone {
     required this.imageUrl,
     this.colorImageUrls = const {},
     this.storageOptions = const [],
+    this.variantStock,
     this.warrantyMonths = 12,
     this.ratingAverage = 0,
     this.ratingCount = 0,
@@ -94,6 +97,24 @@ class Phone {
   double get discountPercent =>
       hasDiscount ? (oldPrice! - price) / oldPrice! * 100 : 0;
 
+  bool get hasVariantStock => variantStock != null && variantStock!.isNotEmpty;
+
+  static String variantKey(String color, String storage) =>
+      '${color.trim()}|${storage.trim()}';
+
+  // How many of this colour and size the shop has
+  int stockFor(String color, String storage) =>
+      hasVariantStock ? variantStock![variantKey(color, storage)] ?? 0 : stock;
+
+  // Any size of this colour left (for greying out a sold-out colour)
+  bool colorAvailable(String color) {
+    if (!hasVariantStock) return stock > 0;
+    final sizes = storageOptions.isEmpty
+        ? ['']
+        : [for (final o in storageOptions) o.storage];
+    return sizes.any((s) => stockFor(color, s) > 0);
+  }
+
   factory Phone.fromJson(Map<String, dynamic> json) {
     return Phone(
       id: int.parse(json['id'].toString()),
@@ -116,6 +137,12 @@ class Phone {
       colorImageUrls: json['color_image_urls'] is Map
           ? Map<String, String>.from(json['color_image_urls'])
           : const {},
+      variantStock: json['variant_stock'] is Map
+          ? {
+              for (final e in (json['variant_stock'] as Map).entries)
+                '${e.key}': int.tryParse('${e.value}') ?? 0,
+            }
+          : null,
       storageOptions: json['storage_prices'] is List
           ? (json['storage_prices'] as List)
                 .map((e) => StorageOption.fromJson(e))

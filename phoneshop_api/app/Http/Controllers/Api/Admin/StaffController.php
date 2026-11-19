@@ -12,7 +12,15 @@ class StaffController extends Controller
     public function index()
     {
         return User::where('role', 'staff')->latest()->get(['id', 'name', 'email', 'phone', 'created_at'])
-            ->makeHidden('avatar_url');
+            ->makeHidden(['avatar_url', 'google_account']);
+    }
+
+    // The activity log, newest first; ?user_id= for one person
+    public function activity(Request $request)
+    {
+        return \App\Models\ActivityLog::query()
+            ->when($request->query('user_id'), fn ($q, $id) => $q->where('user_id', $id))
+            ->latest('created_at')->latest('id')->limit(300)->get();
     }
 
     public function store(Request $request)

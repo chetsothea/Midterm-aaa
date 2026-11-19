@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 // One message in a customer's in-app inbox (the 🔔 in the app)
 class Notice extends Model
 {
-    protected $fillable = ['user_id', 'kind', 'title', 'body', 'order_id', 'trade_in_id', 'read_at'];
+    protected $fillable = ['user_id', 'kind', 'title', 'body', 'order_id', 'trade_in_id', 'product_id', 'read_at'];
 
     protected $casts = ['read_at' => 'datetime'];
 

@@ -29,3 +29,5 @@ Thumbs.db
 phoneshop_api/public/uploads/qr_*
 # Customers' trade-in photos
 phoneshop_api/public/uploads/tradein_*
+# Resized picture copies, made by the server on demand
+phoneshop_api/public/uploads/cache/

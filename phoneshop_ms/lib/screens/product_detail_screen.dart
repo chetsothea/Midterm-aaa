@@ -1,3 +1,4 @@
+import '../data/riel.dart';
 import 'package:flutter/material.dart';
 import '../data/models/phone.dart';
 import '../hooks/cart.dart';
@@ -31,6 +32,92 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _qty = 1;
+
+  // "Tell me when it's back": which ones this customer asked for
+  Set<String> _alerts = {};
+  bool _alertBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ApiService.isLoggedIn && !(ApiService.currentUser?.isTeam ?? false)) {
+      ApiService.fetchStockAlerts()
+          .then((a) {
+            if (mounted) setState(() => _alerts = a);
+          })
+          .catchError((_) {});
+    }
+  }
+
+  // This phone, or just the colour/size picked when it is counted that way
+  String get _alertKey =>
+      '${phone.id}|${phone.hasVariantStock ? Phone.variantKey(_color, _storage) : ''}';
+
+  Future<void> _toggleAlert() async {
+    if (!await requireLogin(context) || !mounted) return;
+    final on = !_alerts.contains(_alertKey);
+    setState(() => _alertBusy = true);
+    try {
+      await ApiService.setStockAlert(
+        phone.id,
+        on: on,
+        color: phone.hasVariantStock ? _color : '',
+        storage: phone.hasVariantStock ? _storage : '',
+      );
+      if (!mounted) return;
+      setState(() => on ? _alerts.add(_alertKey) : _alerts.remove(_alertKey));
+      Haptics.success();
+      showMessage(
+        context,
+        on
+            ? trf(
+                'យើងនឹងជូនដំណឹងអ្នក ពេលមានស្តុកវិញ 🔔',
+                "We'll let you know when it's back 🔔",
+              )
+            : trf('បានបោះបង់ការជូនដំណឹង', 'Alert removed'),
+      );
+    } catch (e) {
+      if (mounted) showMessage(context, e.toString(), error: true);
+    } finally {
+      if (mounted) setState(() => _alertBusy = false);
+    }
+  }
+
+  // Sold out (or this colour/size is): instead of buying, ask to be told
+  Widget _notifyBar() {
+    final on = _alerts.contains(_alertKey);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+        child: on
+            ? OutlinedButton.icon(
+                onPressed: _alertBusy ? null : _toggleAlert,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                icon: const Icon(Icons.notifications_active),
+                label: Text(
+                  trf(
+                    'នឹងជូនដំណឹងពេលមានស្តុក · ចុចដើម្បីបោះបង់',
+                    "We'll tell you · tap to cancel",
+                  ),
+                ),
+              )
+            : FilledButton.icon(
+                onPressed: _alertBusy ? null : _toggleAlert,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _orange,
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                icon: const Icon(Icons.notifications_none),
+                label: Text(
+                  trf('ជូនដំណឹងខ្ញុំពេលមានស្តុក', 'Notify me when in stock'),
+                ),
+              ),
+      ),
+    );
+  }
+
   // Drives the picture's parallax as the page scrolls
   final _scroll = ScrollController();
 
@@ -40,12 +127,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
-  // First colour is picked by default; '' when the phone has no colour options
-  late String _color = phone.colors.isEmpty ? '' : phone.colors.first;
-  // Smallest size is picked by default; '' when the phone is sold in one size only
-  late String _storage = phone.storageOptions.isEmpty
-      ? ''
-      : phone.storageOptions.first.storage;
+  // The first colour and size the shop has (first ones if all are sold out);
+  // '' when the phone has no colour / size options
+  late final (String, String) _firstInStock = () {
+    final colors = phone.colors.isEmpty ? [''] : phone.colors;
+    final sizes = phone.storageOptions.isEmpty
+        ? ['']
+        : [for (final o in phone.storageOptions) o.storage];
+    for (final c in colors) {
+      for (final s in sizes) {
+        if (phone.stockFor(c, s) > 0) return (c, s);
+      }
+    }
+    return (colors.first, sizes.first);
+  }();
+  late String _color = _firstInStock.$1;
+  late String _storage = _firstInStock.$2;
+
+  // On the shelf for the colour and size picked
+  int get _left => phone.stockFor(_color, _storage);
+
+  // Picking another colour/size keeps the quantity within what is there
+  void _pick({String? color, String? storage}) => setState(() {
+    _color = color ?? _color;
+    _storage = storage ?? _storage;
+    if (_qty > _left) _qty = _left < 1 ? 1 : _left;
+  });
 
   Phone get phone => widget.phone;
 
@@ -60,8 +167,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       showMessage(
         context,
         trf(
-          'ស្តុកមិនគ្រប់គ្រាន់ (នៅសល់ ${phone.stock})',
-          'Not enough stock (${phone.stock} left)',
+          'ស្តុកមិនគ្រប់គ្រាន់ (នៅសល់ $_left)',
+          'Not enough stock ($_left left)',
         ),
         error: true,
       );
@@ -184,6 +291,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  // A sold-out choice stays tappable (to see its photo) but reads "sold out"
+  Widget _soldOutLabel(Widget label, bool soldOut) {
+    if (!soldOut) return label;
+    return Opacity(
+      opacity: 0.45,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          label,
+          Text(
+            tr('អស់ស្តុក'),
+            style: const TextStyle(fontSize: 10, color: Colors.red),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _heading(String label, String value) {
     return Text.rich(
       TextSpan(
@@ -283,6 +408,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final inStock = phone.stock > 0;
+    // This colour/size; with one shared count it is the same as [inStock]
+    final pickedInStock = _left > 0;
     final price = phone.priceFor(_storage);
     final oldPrice = phone.oldPriceFor(_storage);
     final specs = [
@@ -424,13 +551,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       Icons.check,
                     ),
                     _pill(
-                      inStock
+                      pickedInStock
                           ? trf(
-                              'មានក្នុងស្តុក: ${phone.stock} គ្រឿង',
-                              'In stock: ${phone.stock}',
+                              'មានក្នុងស្តុក: $_left គ្រឿង',
+                              'In stock: $_left',
                             )
+                          : inStock
+                          ? trf('$_picked អស់ស្តុក', '$_picked sold out')
                           : tr('អស់ស្តុក'),
-                      inStock ? const Color(0xFF2563EB) : Colors.red,
+                      pickedInStock ? const Color(0xFF2563EB) : Colors.red,
                       Icons.inventory_2_outlined,
                     ),
                   ],
@@ -456,6 +585,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         fontWeight: FontWeight.w800,
                         color: oldPrice != null ? _red : _navy,
                       ),
+                    ),
+                    // "≈ ៛4,920,000" for customers who think in riel
+                    ValueListenableBuilder<int>(
+                      valueListenable: Riel.rate,
+                      builder: (_, _, _) => Riel.shown
+                          ? Padding(
+                              padding: const EdgeInsets.only(bottom: 5),
+                              child: Text(
+                                '≈ ${Riel.of(price)}',
+                                style: TextStyle(
+                                  color: AppColors.muted,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     if (oldPrice != null) ...[
                       Padding(
@@ -502,9 +647,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         for (final color in phone.colors)
                           _choice(
                             avatar: ColorDot(color: color, size: 18),
-                            label: Text(color),
+                            label: _soldOutLabel(
+                              Text(color),
+                              !phone.colorAvailable(color),
+                            ),
                             selected: _color == color,
-                            onTap: () => setState(() => _color = color),
+                            onTap: () => _pick(color: color),
                           ),
                       ],
                     ),
@@ -521,27 +669,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         for (final option in phone.storageOptions)
                           _choice(
-                            label: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  option.storage,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
+                            label: _soldOutLabel(
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    option.storage,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  money(option.price),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.muted,
+                                  Text(
+                                    money(option.price),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.muted,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              phone.stockFor(_color, option.storage) <= 0,
                             ),
                             selected: _storage == option.storage,
-                            onTap: () =>
-                                setState(() => _storage = option.storage),
+                            onTap: () => _pick(storage: option.storage),
                           ),
                       ],
                     ),
@@ -598,7 +748,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ]),
       ),
       // Same bottom bar as Cart and Checkout: quantity, add to cart, buy now
-      bottomNavigationBar: inStock
+      bottomNavigationBar: pickedInStock
           ? Container(
               decoration: BoxDecoration(
                 color: AppColors.glass,
@@ -644,7 +794,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             IconButton(
                               visualDensity: VisualDensity.compact,
-                              onPressed: _qty < phone.stock
+                              onPressed: _qty < _left
                                   ? () => setState(() => _qty++)
                                   : null,
                               icon: const Icon(Icons.add, size: 18),
@@ -655,7 +805,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: _addToCart,
+                          onPressed: pickedInStock ? _addToCart : null,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: _orange,
                             side: const BorderSide(color: _orange, width: 1.5),
@@ -678,7 +828,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: () => _addToCart(buyNow: true),
+                          onPressed: pickedInStock
+                              ? () => _addToCart(buyNow: true)
+                              : null,
                           style: FilledButton.styleFrom(
                             backgroundColor: _orange,
                             minimumSize: const Size.fromHeight(48),
@@ -701,7 +853,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             )
-          : null,
+          : _notifyBar(),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'delete_account_screen.dart';
+import 'privacy_screen.dart';
 import 'trade_in_screen.dart';
 import 'package:flutter/material.dart';
 import '../data/api_service.dart';
@@ -453,6 +455,47 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
+          // Privacy & terms, and closing the account (App Store / Play rules)
+          Container(
+            decoration: _card,
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                children: [
+                  _menuItem(
+                    Icons.privacy_tip_outlined,
+                    const Color(0xFF64748B),
+                    trf('ឯកជនភាព និងលក្ខខណ្ឌ', 'Privacy & terms'),
+                    trf(
+                      'របៀបដែលហាងប្រើព័ត៌មានរបស់អ្នក',
+                      'How the shop uses your data',
+                    ),
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 66),
+                  _menuItem(
+                    Icons.person_remove_outlined,
+                    Colors.red,
+                    trf('លុបគណនី', 'Delete account'),
+                    trf(
+                      'លុបគណនី និងទិន្នន័យរបស់អ្នកជាអចិន្ត្រៃយ៍',
+                      'Remove your account and data for good',
+                    ),
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DeleteAccountScreen(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           OutlinedButton.icon(
             onPressed: _logout,
             style: OutlinedButton.styleFrom(

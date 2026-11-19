@@ -7,11 +7,19 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// For the App Store / Play Store listing, and anyone who asks
+Route::view('privacy', 'legal.privacy');
+Route::view('terms', 'legal.terms');
+
 // Uploaded pictures with a CORS header, so Flutter web can draw them.
 // Only plain file names inside public/uploads; no folders, no "..".
 Route::get('media/{file}', function (Request $request, string $file) {
     $path = public_path('uploads/'.$file);
     abort_unless(is_file($path), 404);
+    // ?w=320: a small WebP copy for cards and lists (see MediaResizer)
+    if ($request->filled('w') && ($small = \App\Support\MediaResizer::path($path, (int) $request->query('w')))) {
+        $path = $small;
+    }
 
     // Same websites as the API (config/cors.php)
     $allowed = config('cors.allowed_origins', ['*']);

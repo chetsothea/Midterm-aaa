@@ -28,6 +28,13 @@ class OrderItem extends Model
         return $this->belongsTo(Order::class);
     }
 
+    // Back on the shelf, in the same colour and size (order cancelled or deleted)
+    public function putBack(): void
+    {
+        $product = $this->product_id ? Product::lockForUpdate()->find($this->product_id) : null;
+        $product?->moveStock($this->color, $this->storage, $this->qty);
+    }
+
     public function units()
     {
         return $this->hasMany(SoldUnit::class)->orderBy('id');

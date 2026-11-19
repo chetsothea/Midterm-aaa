@@ -108,6 +108,19 @@ class UserAvatar extends StatelessWidget {
   }
 }
 
+// The shop's pictures come in a few widths (small WebP copies made by the
+// server). Asks for the smallest one that is still sharp at [pixels] wide;
+// pictures from anywhere else are left as they are.
+const _mediaWidths = [160, 320, 640, 960];
+
+String sizedImageUrl(String url, double pixels) {
+  if (!url.contains('/media/') || url.contains('?')) return url;
+  for (final w in _mediaWidths) {
+    if (w >= pixels) return '$url?w=$w';
+  }
+  return url; // bigger than every copy: the original
+}
+
 class PhoneImage extends StatelessWidget {
   final String url;
   final double size;
@@ -136,7 +149,7 @@ class PhoneImage extends StatelessWidget {
       );
     }
     return Image.network(
-      url,
+      sizedImageUrl(url, size * MediaQuery.devicePixelRatioOf(context)),
       // On Web, fall back to a plain <img> tag so images from the API load without CORS headers
       webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
       width: size,

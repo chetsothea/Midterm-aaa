@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'riel.dart';
 import 'models/notice.dart';
 import 'models/trade_in.dart';
 import 'models/voucher.dart';
@@ -301,6 +302,41 @@ class ApiService {
     await GoogleAuth.signOut();
   }
 
+  // Closes the customer's own account for good, then logs out here.
+  // [password], or for Google accounts [confirm] = "DELETE".
+  static Future<void> deleteAccount({
+    String password = '',
+    String confirm = '',
+  }) async {
+    _handle(
+      await http.delete(
+        Uri.parse('$baseUrl/me'),
+        headers: _headers,
+        body: jsonEncode({
+          if (password.isNotEmpty) 'password': password,
+          if (confirm.isNotEmpty) 'confirm': confirm,
+        }),
+      ),
+    );
+    _forgetSession();
+    afterLogout?.call(); // ♥ and cart off this phone too
+    await GoogleAuth.signOut();
+  }
+
+  // ---------- Saved delivery addresses (besides the account's own) ----------
+
+  static Future<List<(int, String, String)>> fetchAddresses() async => [
+    for (final a in await _get('/addresses') as List)
+      (a['id'] as int, '${a['label']}', '${a['address']}'),
+  ];
+
+  static Future<void> saveAddress(String label, String address) async =>
+      _post('/addresses', {'label': label, 'address': address});
+
+  static Future<void> deleteAddress(int id) async => _handle(
+    await http.delete(Uri.parse('$baseUrl/addresses/$id'), headers: _headers),
+  );
+
   // ---------- ♥ and cart kept on the account ----------
 
   static Future<(List<int>, List<Map<String, dynamic>>)> fetchSaved() async {
@@ -348,8 +384,13 @@ class ApiService {
   }
 
   // {brands: [...], categories: [{id, name, brands: [...]}]} for the store menu
-  static Future<Map<String, dynamic>> fetchMenu() async =>
-      Map<String, dynamic>.from(await _get('/menu'));
+  static Future<Map<String, dynamic>> fetchMenu() async {
+    final menu = Map<String, dynamic>.from(await _get('/menu'));
+    // The shop's riel rate, for "≈ ៛" next to prices
+    final rate = int.tryParse('${menu['khr_rate'] ?? ''}');
+    if (rate != null) Riel.rate.value = rate;
+    return menu;
+  }
 
   // Cambodia's provinces ('') → districts → communes → villages, one level per call.
   // Cached: place names don't change while the app is open.
@@ -536,6 +577,14 @@ class ApiService {
       headers: _headers,
     ),
   );
+
+  // The admin gave a cancelled order's money back; [note] e.g. "ABA", "cash"
+  static Future<Order> markRefunded(int orderId, [String note = '']) async =>
+      Order.fromJson(
+        await _post('/admin/orders/$orderId/refunded', {
+          if (note.isNotEmpty) 'note': note,
+        }),
+      );
 
   static Future<void> deleteOrder(int orderId) async => _handle(
     await http.delete(
@@ -883,6 +932,76 @@ class ApiService {
       ShippingRates.fromJson(Map<String, dynamic>.from(data['shipping'])),
     );
   }
+
+  // The admin's page also shows the riel rate; read it from the same answer
+  static Future<int> fetchKhrRate() async =>
+      int.tryParse('${(await _get('/admin/vouchers'))['khr_rate']}') ?? 4100;
+
+  static Future<int> saveKhrRate(int rate) async {
+    final Map data = await _put('/admin/settings/khr-rate', {'khr_rate': rate});
+    Riel.rate.value = (data['khr_rate'] as num).toInt();
+    return Riel.rate.value;
+  }
+
+  // One phone, fresh (a 🔔 about it opens it)
+  static Future<Phone> fetchPhone(int id) async =>
+      Phone.fromJson(Map<String, dynamic>.from(await _get('/products/$id')));
+
+  // ---------- "Tell me when it's back in stock" ----------
+
+  // "7|Blue|256GB" for each alert ("7|" when any colour/size)
+  static Future<Set<String>> fetchStockAlerts() async => {
+    for (final a in await _get('/stock-alerts') as List)
+      '${a['product_id']}|${a['variant'] ?? ''}',
+  };
+
+  static Future<void> setStockAlert(
+    int productId, {
+    required bool on,
+    String color = '',
+    String storage = '',
+  }) async {
+    final body = {
+      if (color.isNotEmpty) 'color': color,
+      if (storage.isNotEmpty) 'storage': storage,
+    };
+    if (on) {
+      await _post('/products/$productId/stock-alert', body);
+    } else {
+      _handle(
+        await http.delete(
+          Uri.parse('$baseUrl/products/$productId/stock-alert'),
+          headers: _headers,
+          body: jsonEncode(body),
+        ),
+      );
+    }
+  }
+
+  // ---------- Activity log (admin) ----------
+
+  // Who on the team changed what, newest first; [userId] for one person
+  static Future<List<Map<String, dynamic>>> fetchActivity({
+    int? userId,
+  }) async => [
+    for (final a
+        in await _get(
+              '/admin/activity${userId == null ? '' : '?user_id=$userId'}',
+            )
+            as List)
+      Map<String, dynamic>.from(a),
+  ];
+
+  // ---------- Reviews (admin) ----------
+
+  static Future<List<Map<String, dynamic>>> fetchAllReviews() async => [
+    for (final r in await _get('/admin/reviews') as List)
+      Map<String, dynamic>.from(r),
+  ];
+
+  static Future<bool> setReviewHidden(int id, bool hidden) async =>
+      (await _put('/admin/reviews/$id/hidden', {'hidden': hidden}))['hidden'] ==
+      true;
 
   static Future<Voucher> saveVoucher(Voucher voucher) async {
     final data = voucher.id == null

@@ -308,7 +308,22 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     final verifying = s['verifying_payments'] as int? ?? 0;
     final received = s['new_received'] as int? ?? 0;
     final unpaid = s['unpaid_delivered'] as int? ?? 0;
+    final refunds = s['refunds_due'] as int? ?? 0;
     return [
+      // Cancelled after paying: the customer is waiting for their money
+      if (refunds > 0)
+        _task(
+          color: const Color(0xFFFF9F0A),
+          icon: Icons.currency_exchange,
+          title: 'ត្រូវបង្វិលប្រាក់ឱ្យអតិថិជន',
+          subtitle:
+              '$refunds Order • ${money((s['refunds_due_total'] as num).toDouble())}',
+          onTap: () => _openOrders(
+            'ត្រូវបង្វិលប្រាក់',
+            (o) => o.refundStatus == 'due',
+            status: 'cancelled',
+          ),
+        ),
       if (pending > 0)
         _task(
           color: const Color(0xFF2F62D9),

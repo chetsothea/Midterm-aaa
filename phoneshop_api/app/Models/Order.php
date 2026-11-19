@@ -19,7 +19,7 @@ class Order extends Model
         'customer_hidden_at',
         'bakong_qr', 'bakong_md5', 'bakong_checked_at',
         'subtotal', 'shipping_fee', 'discount', 'voucher_code',
-        'delivered_at',
+        'delivered_at', 'refund_status', 'refunded_at',
     ];
 
     protected $casts = ['bakong_checked_at' => 'datetime'];
@@ -116,6 +116,7 @@ class Order extends Model
             'discount' => 'float',
             'received_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'refunded_at' => 'datetime',
             'received_seen_at' => 'datetime',
             'customer_hidden_at' => 'datetime',
         ];
@@ -154,11 +155,13 @@ class Order extends Model
     {
         DB::transaction(function () use ($note) {
             foreach ($this->items as $item) {
-                $item->product?->increment('stock', $item->qty);
+                $item->putBack();
             }
             $this->releaseVoucher();
 
-            $this->update(['status' => 'cancelled']);
+            // Money already in (or being checked): the shop owes it back
+            $refund = in_array($this->payment_status, ['paid', 'verifying'], true) ? 'due' : null;
+            $this->update(['status' => 'cancelled', 'refund_status' => $refund]);
             $this->track(null, $note);
         });
     }

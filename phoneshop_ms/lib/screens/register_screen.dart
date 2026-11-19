@@ -5,6 +5,7 @@ import '../components/auth_ui.dart';
 import '../components/common.dart';
 import '../hooks/language.dart';
 import '../theme/app_theme.dart';
+import 'privacy_screen.dart';
 
 // Returns the new User to the login screen when registration succeeds
 class RegisterScreen extends StatefulWidget {
@@ -207,6 +208,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
           text: tr('Create Account'),
           loading: _isLoading,
           onPressed: _register,
+        ),
+        // Signing up means agreeing to these: say so, with a way to read them
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: TextButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+            ),
+            child: Text(
+              trf(
+                'ដោយបង្កើតគណនី អ្នកយល់ព្រមនឹងលក្ខខណ្ឌ និងគោលការណ៍ឯកជនភាព',
+                'By creating an account you agree to the terms and privacy policy',
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
         ),
         const SizedBox(height: 6),
         AuthSwitchLink(

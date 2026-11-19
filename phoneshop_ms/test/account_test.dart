@@ -17,7 +17,9 @@ void main() {
   testWidgets('the account page fits a small phone and switches language', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 1600));
+    // Narrow phone; tall enough to build the whole page (privacy and delete
+    // account sit above Logout)
+    await tester.binding.setSurfaceSize(const Size(320, 2000));
     addTearDown(() {
       tester.binding.setSurfaceSize(null);
       ApiService.token = null;

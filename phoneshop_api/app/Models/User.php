@@ -44,7 +44,7 @@ class User extends Authenticatable
         'saved_cart',
     ];
 
-    protected $appends = ['avatar_url'];
+    protected $appends = ['avatar_url', 'google_account'];
 
     /**
      * Get the attributes that should be cast.
@@ -65,6 +65,42 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): string
     {
         return \App\Support\Uploads::url($this->avatar);
+    }
+
+    // Signs in with Google (has no password of their own to type)
+    public function getGoogleAccountAttribute(): bool
+    {
+        return $this->google_id !== null;
+    }
+
+    // Removes the account for good: the login, saved lists, reviews, comments,
+    // trade-ins (with their photos) and notices. Orders stay for the shop's
+    // records and warranties, with the name and e-mail written on them, but no
+    // longer belong to any account.
+    public function closeAccount(): void
+    {
+        $files = [$this->avatar];
+        foreach (TradeIn::where('user_id', $this->id)->get() as $tradeIn) {
+            array_push($files, ...($tradeIn->photos ?? []));
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            foreach ($this->orders as $order) {
+                $order->update([
+                    'user_id' => null,
+                    'customer_name' => $order->customer_name ?: $this->name,
+                    'customer_email' => $order->customer_email ?: $this->email,
+                ]);
+            }
+            $this->tokens()->delete();
+            $this->delete(); // the rest goes with it (foreign keys)
+        });
+
+        foreach (array_filter($files) as $file) {
+            if (! str_starts_with($file, 'http') && is_file(public_path('uploads/'.$file))) {
+                unlink(public_path('uploads/'.$file));
+            }
+        }
     }
 
     public function orders()

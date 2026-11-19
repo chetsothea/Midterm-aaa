@@ -123,8 +123,8 @@ class Cart extends ChangeNotifier {
         final here = _items[key]?.qty ?? 0;
         final wanted = (s['qty'] as num).toInt();
         if (wanted <= here) continue;
-        final left = phone.stock - qtyOf(phone.id) + here;
-        final qty = wanted.clamp(0, left);
+        final left = roomFor(phone, color, storage, except: key);
+        final qty = wanted.clamp(0, left < 0 ? 0 : left);
         if (qty <= 0) continue;
         _items[key] = CartItem(phone, color, storage, qty);
       }
@@ -149,9 +149,22 @@ class Cart extends ChangeNotifier {
       .where((i) => i.phone.id == phoneId)
       .fold(0, (sum, i) => sum + i.qty);
 
+  // How many more of this colour/size can go in the cart. With stock per
+  // colour/size it is that line's own stock; otherwise every colour of the
+  // phone shares one count. [except] leaves a line out (when changing it).
+  int roomFor(Phone phone, String color, String storage, {String? except}) {
+    final key = keyFor(phone.id, color, storage);
+    if (phone.hasVariantStock) {
+      final here = key == except ? 0 : (_items[key]?.qty ?? 0);
+      return phone.stockFor(color, storage) - here;
+    }
+    final skip = except == null ? 0 : (_items[except]?.qty ?? 0);
+    return phone.stock - (qtyOf(phone.id) - skip);
+  }
+
   // Returns false when there is not enough stock
   bool add(Phone phone, [int qty = 1, String color = '', String storage = '']) {
-    if (qtyOf(phone.id) + qty > phone.stock) return false;
+    if (qty > roomFor(phone, color, storage)) return false;
     final key = keyFor(phone.id, color, storage);
     final current = _items[key]?.qty ?? 0;
     _items[key] = CartItem(phone, color, storage, current + qty);
@@ -164,7 +177,8 @@ class Cart extends ChangeNotifier {
     if (item == null) return;
     if (qty <= 0) {
       _items.remove(key);
-    } else if (qtyOf(item.phone.id) - item.qty + qty <= item.phone.stock) {
+    } else if (qty <=
+        roomFor(item.phone, item.color, item.storage, except: key)) {
       item.qty = qty;
     }
     notifyListeners();

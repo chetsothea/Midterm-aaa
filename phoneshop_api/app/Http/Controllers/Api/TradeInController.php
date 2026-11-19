@@ -98,7 +98,7 @@ class TradeInController extends Controller
         return TradeIn::with(['user:id,name,email,phone', 'wantedProduct:id,name'])
             ->when($status, fn ($q) => $q->where('status', $status))
             ->latest()->latest('id')->get()
-            ->each(fn ($t) => $t->user?->makeHidden('avatar_url'));
+            ->each(fn ($t) => $t->user?->makeHidden(['avatar_url', 'google_account']));
     }
 
     // What the shop will pay (as credit) for the phone, after looking at it

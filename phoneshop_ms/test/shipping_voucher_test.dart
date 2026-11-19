@@ -157,9 +157,15 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(400, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     Map<String, dynamic>? savedRates;
+    int? savedKhr;
     final mock = MockClient((request) async {
       if (request.method == 'PUT') {
-        savedRates = jsonDecode(request.body);
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        if (request.url.path.endsWith('/khr-rate')) {
+          savedKhr = body['khr_rate'];
+          return _json(body);
+        }
+        savedRates = body;
         return _json(savedRates!);
       }
       return _json({
@@ -188,6 +194,7 @@ void main() {
           },
         ],
         'shipping': {'phnom_penh': 1.5, 'province': 3, 'free_over': 0},
+        'khr_rate': 4100,
       });
     });
 
@@ -206,5 +213,6 @@ void main() {
     }, () => mock);
 
     expect(savedRates, {'phnom_penh': 1.5, 'province': 4.5, 'free_over': 0.0});
+    expect(savedKhr, 4100); // the riel rate is saved with them
   });
 }

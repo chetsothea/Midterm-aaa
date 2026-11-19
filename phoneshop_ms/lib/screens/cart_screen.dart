@@ -1,3 +1,4 @@
+import '../data/riel.dart';
 import 'package:flutter/material.dart';
 import '../hooks/cart.dart';
 import '../components/common.dart';
@@ -224,8 +225,13 @@ class CartScreen extends StatelessWidget {
                             _qtyButton(
                               Icons.add,
                               tr('បន្ថែម'),
-                              // Stock is shared by every colour of this phone in the cart
-                              cart.qtyOf(item.phone.id) < item.phone.stock
+                              // Room left for this colour/size (or the phone's shared count)
+                              cart.roomFor(
+                                        item.phone,
+                                        item.color,
+                                        item.storage,
+                                      ) >
+                                      0
                                   ? () => cart.setQty(item.key, item.qty + 1)
                                   : null,
                               filled: true,
@@ -352,6 +358,14 @@ class CartScreen extends StatelessWidget {
                 ),
               ],
             ),
+            if (Riel.shown)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '≈ ${Riel.of(cart.total)}',
+                  style: TextStyle(color: AppColors.muted, fontSize: 13),
+                ),
+              ),
           ],
         ),
       ),

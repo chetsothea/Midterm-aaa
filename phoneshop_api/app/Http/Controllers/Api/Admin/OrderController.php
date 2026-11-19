@@ -60,6 +60,20 @@ class OrderController extends Controller
         return $order->load(['user', 'items.product', 'trackings']);
     }
 
+    // The admin gave the money back (cash, ABA, ACLEDA ...)
+    public function markRefunded(Request $request, Order $order)
+    {
+        abort_unless($order->refund_status === 'due', 422, 'Order នេះមិនមានប្រាក់ត្រូវបង្វិលទេ');
+        $data = $request->validate(['note' => 'nullable|string|max:150']);
+
+        $order->update(['refund_status' => 'refunded', 'refunded_at' => now()]);
+        $order->track(null, 'ហាងបានបង្វិលប្រាក់ $'.number_format($order->total, 2).(! empty($data['note']) ? " ({$data['note']})" : ''));
+        \App\Models\Notice::tell($order->user_id, 'payment', 'បានបង្វិលប្រាក់ · Order '.($order->code ?: '#'.$order->id),
+            'ហាងបានបង្វិលប្រាក់ $'.number_format($order->total, 2).' ជូនអ្នកហើយ', ['order_id' => $order->id]);
+
+        return $order->load(['user', 'items.product', 'trackings']);
+    }
+
     // Removes the order for good, with its items and tracking steps. An order still in
     // progress puts its stock back; a delivered one was sold and a cancelled one already did.
     public function destroy(Order $order)
@@ -67,7 +81,7 @@ class OrderController extends Controller
         DB::transaction(function () use ($order) {
             if (! in_array($order->status, ['delivered', 'cancelled'], true)) {
                 foreach ($order->items as $item) {
-                    $item->product?->increment('stock', $item->qty);
+                    $item->putBack();
                 }
                 $order->releaseVoucher();
             }
@@ -157,8 +171,8 @@ class OrderController extends Controller
             ->latest()
             ->latest('id')
             ->get()
-            // The picture is not selected above, and the list does not show it
-            ->makeHidden('avatar_url');
+            // Not selected above, and the list does not show them
+            ->makeHidden(['avatar_url', 'google_account']);
     }
 
     // Fix a customer's details, or give them a new password when they've forgotten it.
@@ -223,21 +237,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'អាចលុបបានតែគណនីអតិថិជនប៉ុណ្ណោះ'], 422);
         }
 
-        DB::transaction(function () use ($user) {
-            foreach ($user->orders as $order) {
-                $order->update([
-                    'user_id' => null,
-                    'customer_name' => $order->customer_name ?: $user->name,
-                    'customer_email' => $order->customer_email ?: $user->email,
-                ]);
-            }
-            $user->tokens()->delete();
-            $user->delete();
-        });
-
-        if ($user->avatar && file_exists(public_path('uploads/'.$user->avatar))) {
-            unlink(public_path('uploads/'.$user->avatar));
-        }
+        $user->closeAccount();
 
         return response()->json(['message' => 'Deleted']);
     }
@@ -271,6 +271,9 @@ class OrderController extends Controller
             // Money still to collect: the customer has the phone, the shop doesn't have the cash
             'unpaid_delivered' => $unpaidDelivered->count(),
             'unpaid_delivered_total' => (float) $unpaidDelivered->sum('total'),
+            // Cancelled after paying: money the shop still has to give back
+            'refunds_due' => Order::where('refund_status', 'due')->count(),
+            'refunds_due_total' => (float) Order::where('refund_status', 'due')->sum('total'),
             'revenue' => (float) Order::where('payment_status', 'paid')->sum('total'),
             'revenue_by_day' => $this->revenueByDay(),
             'orders_by_status' => $this->ordersByStatus(),

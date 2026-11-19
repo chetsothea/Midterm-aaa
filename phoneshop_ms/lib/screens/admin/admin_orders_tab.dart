@@ -424,6 +424,65 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
     );
   }
 
+  Widget _refundBanner(Order order) {
+    final due = order.refundStatus == 'due';
+    final color = due ? const Color(0xFFFF9F0A) : AppColors.green;
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            due ? Icons.currency_exchange : Icons.check_circle,
+            color: color,
+            size: 20,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              due
+                  ? 'ត្រូវបង្វិលប្រាក់ ${money(order.total)}'
+                  : 'បានបង្វិលប្រាក់ ${money(order.total)} រួចហើយ',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
+            ),
+          ),
+          // Money is the admin's call, not staff's
+          if (due && (ApiService.currentUser?.isAdmin ?? false))
+            FilledButton(
+              onPressed: () => _markRefunded(order),
+              style: FilledButton.styleFrom(backgroundColor: color),
+              child: const Text('បានបង្វិលរួច'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _markRefunded(Order order) async {
+    // How it was given back, e.g. "ABA"; null when the admin backs out
+    final text = await showDialog<String>(
+      context: context,
+      builder: (_) => _RefundDialog(total: order.total),
+    );
+    if (text == null) return;
+    try {
+      await ApiService.markRefunded(order.id, text);
+      if (!mounted) return;
+      showMessage(context, 'បានកត់ត្រាការបង្វិលប្រាក់');
+      _refresh();
+    } catch (e) {
+      if (mounted) showMessage(context, e.toString(), error: true);
+    }
+  }
+
   Widget _orderCard(Order order) {
     final cancelled = order.status == 'cancelled';
     final next = _nextStatus[order.status];
@@ -667,6 +726,8 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                 style: TextStyle(color: AppColors.muted, fontSize: 12),
               ),
           ]),
+          // Cancelled after paying: show what is owed, and let the admin close it
+          if (order.refundStatus.isNotEmpty) _refundBanner(order),
           if (order.receivedAt != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
@@ -1096,6 +1157,49 @@ class _TrackingDialogState extends State<_TrackingDialog> {
           ),
           icon: const Icon(Icons.check, size: 18),
           label: const Text('រក្សាទុក'),
+        ),
+      ],
+    );
+  }
+}
+
+// "Refund $500?" with how it was paid back; owns its field for the dialog's life
+class _RefundDialog extends StatefulWidget {
+  final double total;
+
+  const _RefundDialog({required this.total});
+
+  @override
+  State<_RefundDialog> createState() => _RefundDialogState();
+}
+
+class _RefundDialogState extends State<_RefundDialog> {
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('បង្វិលប្រាក់ ${money(widget.total)}?'),
+      content: TextField(
+        controller: _note,
+        decoration: const InputDecoration(
+          labelText: 'តាមរយៈ (ឧ. ABA, សាច់ប្រាក់)',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('បោះបង់'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _note.text.trim()),
+          child: const Text('បានបង្វិលរួច'),
         ),
       ],
     );

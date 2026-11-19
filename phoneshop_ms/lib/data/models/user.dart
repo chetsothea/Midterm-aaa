@@ -6,6 +6,7 @@ class User {
   final String address;
   final String role;
   final String avatarUrl; // '' when there is no picture
+  final bool googleAccount; // signs in with Google, has no password to type
 
   User({
     required this.id,
@@ -15,6 +16,7 @@ class User {
     this.address = '',
     required this.role,
     this.avatarUrl = '',
+    this.googleAccount = false,
   });
 
   bool get isAdmin => role == 'admin';
@@ -32,6 +34,7 @@ class User {
       address: json['address'] ?? '',
       role: json['role'] ?? 'user',
       avatarUrl: json['avatar_url'] ?? '',
+      googleAccount: json['google_account'] == true,
     );
   }
 }

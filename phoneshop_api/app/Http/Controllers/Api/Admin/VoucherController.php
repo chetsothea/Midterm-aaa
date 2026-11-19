@@ -17,7 +17,17 @@ class VoucherController extends Controller
             // Trade-in credits are managed from the trade-in page
             'vouchers' => Voucher::whereNull('user_id')->latest()->get()->map(fn (Voucher $v) => $this->present($v)),
             'shipping' => Shipping::rates(),
+            'khr_rate' => Shipping::khrRate(),
         ];
+    }
+
+    // Riel for one dollar, shown next to prices; 0 hides riel
+    public function updateKhrRate(Request $request)
+    {
+        $data = $request->validate(['khr_rate' => 'required|integer|min:0|max:100000']);
+        \App\Models\Setting::setText('khr_rate', (string) $data['khr_rate']);
+
+        return ['khr_rate' => Shipping::khrRate()];
     }
 
     public function store(Request $request)

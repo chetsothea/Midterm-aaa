@@ -6,9 +6,11 @@ use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\StaffController;
 use App\Http\Controllers\Api\Admin\VoucherController;
 use App\Http\Controllers\Api\Admin\WarrantyController;
+use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SavedListsController;
+use App\Http\Controllers\Api\StockAlertController;
 use App\Http\Controllers\Api\TradeInController;
 use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\AuthController;
@@ -18,6 +20,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Middleware\AdminOnly;
+use App\Http\Middleware\LogTeamActivity;
 use App\Http\Middleware\ShopTeam;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +56,7 @@ Route::post('/guest/orders/{order}/received', [OrderController::class, 'received
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
+    Route::delete('/me', [AuthController::class, 'deleteAccount'])->middleware('throttle:5,1');
     Route::get('/me/saved', [SavedListsController::class, 'show']);
     Route::put('/me/saved', [SavedListsController::class, 'update'])->middleware('throttle:60,1');
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -71,6 +75,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->middleware('throttle:10,1');
 
+    // Delivery addresses besides the account's own
+    Route::get('/addresses', [AddressController::class, 'index']);
+    Route::post('/addresses', [AddressController::class, 'store'])->middleware('throttle:20,1');
+    Route::delete('/addresses/{address}', [AddressController::class, 'destroy']);
+
+    // "Tell me when it's back in stock"
+    Route::get('/stock-alerts', [StockAlertController::class, 'index']);
+    Route::post('/products/{product}/stock-alert', [StockAlertController::class, 'store'])->middleware('throttle:30,1');
+    Route::delete('/products/{product}/stock-alert', [StockAlertController::class, 'destroy']);
+
     // The 🔔 inbox
     Route::get('/notices', [NoticeController::class, 'index']);
     Route::post('/notices/read', [NoticeController::class, 'readAll']);
@@ -84,7 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/live/comments', [LiveController::class, 'postComment'])->middleware('throttle:20,1');
 
     // Admin and staff: the day-to-day work on orders
-    Route::middleware(ShopTeam::class)->prefix('admin')->group(function () {
+    Route::middleware([ShopTeam::class, LogTeamActivity::class])->prefix('admin')->group(function () {
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::post('/orders/received-seen', [AdminOrderController::class, 'markReceivedSeen']);
         Route::get('/orders/new', [AdminOrderController::class, 'newOrders']);
@@ -98,7 +112,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Admin only: money, prices, settings and accounts
-    Route::middleware(AdminOnly::class)->prefix('admin')->group(function () {
+    Route::middleware([AdminOnly::class, LogTeamActivity::class])->prefix('admin')->group(function () {
+        Route::get('/activity', [StaffController::class, 'activity']);
         Route::get('/dashboard', [AdminOrderController::class, 'dashboard']);
         Route::get('/reports/sales', [ReportController::class, 'sales']);
         Route::get('/reports/sales.csv', [ReportController::class, 'salesCsv']);
@@ -120,6 +135,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/vouchers/{voucher}', [VoucherController::class, 'update']);
         Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy']);
         Route::put('/settings/shipping', [VoucherController::class, 'updateShipping']);
+        Route::put('/settings/khr-rate', [VoucherController::class, 'updateKhrRate']);
+        Route::get('/reviews', [ReviewController::class, 'adminIndex']);
+        Route::put('/reviews/{review}/hidden', [ReviewController::class, 'setHidden']);
         Route::get('/trade-ins', [TradeInController::class, 'index']);
         Route::put('/trade-ins/{tradeIn}/offer', [TradeInController::class, 'offer']);
         Route::post('/trade-ins/{tradeIn}/reject', [TradeInController::class, 'reject']);
@@ -130,5 +148,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/products/{product}', [AdminProductController::class, 'destroy']);
 
         Route::delete('/orders/{order}', [AdminOrderController::class, 'destroy']);
+        Route::post('/orders/{order}/refunded', [AdminOrderController::class, 'markRefunded']);
     });
 });

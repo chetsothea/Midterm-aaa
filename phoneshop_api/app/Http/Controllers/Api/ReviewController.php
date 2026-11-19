@@ -16,7 +16,9 @@ class ReviewController extends Controller
     // Signed-in customers also learn whether they may review (and their own).
     public function index(Request $request, Product $product)
     {
-        $reviews = $product->reviews()->with('user:id,name,avatar')->latest()->get();
+        // Hidden ones are not shown and don't count (the writer still sees theirs)
+        $all = $product->reviews()->with('user:id,name,avatar')->latest()->get();
+        $reviews = $all->whereNull('hidden_at')->values();
         $user = $request->user('sanctum');
 
         $stars = [];
@@ -30,7 +32,7 @@ class ReviewController extends Controller
             'stars' => $stars,
             'reviews' => $reviews->map->toPublic()->values(),
             'can_review' => $user ? self::hasReceived($user->id, $product->id) : false,
-            'mine' => $user ? $reviews->firstWhere('user_id', $user->id)?->toPublic() : null,
+            'mine' => $user ? $all->firstWhere('user_id', $user->id)?->toPublic() : null,
         ]);
     }
 
@@ -56,6 +58,33 @@ class ReviewController extends Controller
         );
 
         return response()->json($review->load('user:id,name,avatar')->toPublic(), 201);
+    }
+
+    // ---------- Admin ----------
+
+    // Newest reviews of every phone, hidden ones too, to keep an eye on them
+    public function adminIndex()
+    {
+        return Review::with(['user:id,name', 'product:id,name'])->latest()->latest('id')->limit(200)->get()
+            ->map(fn (Review $r) => [
+                'id' => $r->id,
+                'product' => $r->product?->name ?? '',
+                'product_id' => $r->product_id,
+                'name' => $r->user?->name ?? '',
+                'rating' => $r->rating,
+                'comment' => $r->comment ?? '',
+                'hidden' => $r->hidden_at !== null,
+                'created_at' => $r->created_at,
+            ]);
+    }
+
+    // Hide a rude or fake review, or show it again
+    public function setHidden(Request $request, Review $review)
+    {
+        $data = $request->validate(['hidden' => 'required|boolean']);
+        $review->update(['hidden_at' => $data['hidden'] ? now() : null]);
+
+        return ['id' => $review->id, 'hidden' => $review->hidden_at !== null];
     }
 
     // The customer has a delivered order with this phone in it

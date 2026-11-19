@@ -148,6 +148,41 @@ class AuthController extends Controller
         return $request->user();
     }
 
+    // The customer closes their own account (App Store and Play Store require
+    // this). Asks for the password, or for Google accounts the word DELETE.
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+        if ($user->role !== 'user') {
+            return response()->json(['message' => 'គណនី Admin/Staff មិនអាចលុបពីទីនេះបានទេ'], 422);
+        }
+
+        $data = $request->validate([
+            'password' => 'nullable|string',
+            'confirm' => 'nullable|string',
+        ]);
+        $confirmed = $user->google_id
+            ? strtoupper(trim((string) ($data['confirm'] ?? ''))) === 'DELETE'
+            : Hash::check((string) ($data['password'] ?? ''), $user->password);
+        if (! $confirmed) {
+            return response()->json(['message' => $user->google_id
+                ? 'សូមវាយពាក្យ DELETE ដើម្បីបញ្ជាក់'
+                : 'ពាក្យសម្ងាត់មិនត្រឹមត្រូវ'], 422);
+        }
+
+        // Not while an order is on its way: the shop still needs to reach them
+        $busy = $user->orders()->whereIn('status', ['pending', 'confirmed', 'shipping'])->count();
+        if ($busy) {
+            return response()->json([
+                'message' => "អ្នកមាន Order {$busy} កំពុងដំណើរការ។ សូមរង់ចាំឱ្យដល់ ឬបោះបង់វាសិន ទើបលុបគណនីបាន",
+            ], 422);
+        }
+
+        $user->closeAccount();
+
+        return response()->json(['message' => 'គណនីរបស់អ្នកត្រូវបានលុបហើយ']);
+    }
+
     // The customer's own details, password and picture. The role can't be changed here.
     // No old password is asked for: this is also how a logged-in customer who forgot it sets a new one.
     public function updateProfile(Request $request)

@@ -97,12 +97,6 @@ class OrderController extends Controller
                 ? Product::lockForUpdate()->find($item['product_id'])
                 : Product::find($item['product_id']);
 
-            if ($product->stock < $item['qty']) {
-                throw ValidationException::withMessages([
-                    'items' => "{$product->name} នៅសល់តែ {$product->stock} គ្រឿងប៉ុណ្ណោះ",
-                ]);
-            }
-
             // The colour must be one the product is sold in
             $color = $item['color'] ?? null;
             $colors = $product->colorOptions();
@@ -125,8 +119,17 @@ class OrderController extends Controller
                 }
             }
 
+            // Checked for the exact colour and size picked
+            $left = $product->stockFor($colors ? $color : null, $storage);
+            if ($left < $item['qty']) {
+                $what = trim($product->name.' '.implode(' ', array_filter([$colors ? $color : null, $storage])));
+                throw ValidationException::withMessages([
+                    'items' => $left > 0 ? "{$what} នៅសល់តែ {$left} គ្រឿងប៉ុណ្ណោះ" : "{$what} អស់ស្តុកហើយ",
+                ]);
+            }
+
             if ($reserve) {
-                $product->decrement('stock', $item['qty']);
+                $product->moveStock($colors ? $color : null, $storage, -$item['qty']);
             }
             // Price comes from the database, never from the app
             $subtotal += $price * $item['qty'];

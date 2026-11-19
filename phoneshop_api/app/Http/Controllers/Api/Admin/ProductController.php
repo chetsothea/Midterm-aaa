@@ -22,6 +22,8 @@ class ProductController extends Controller
             'discount_percent' => 'nullable|numeric|min:0|max:99',
             'condition' => 'nullable|string|max:20',
             'warranty_months' => 'nullable|integer|min:0|max:120',
+            // Stock per colour/size as JSON {"Blue|256GB": 3}; empty = one shared count
+            'variant_stock' => 'nullable|json',
             'stock' => 'required|integer|min:0',
             'ram' => 'nullable|string|max:20',
             'storage' => 'nullable|string|max:255',
@@ -35,6 +37,19 @@ class ProductController extends Controller
             'color_images' => 'nullable|array',
             'color_images.*' => 'image|max:4096',
         ];
+    }
+
+    // The grid from the admin form; the model keeps only real combinations and
+    // sets the total. Sent empty, the phone goes back to one shared count.
+    private function variantStock(array $data): array
+    {
+        if (! array_key_exists('variant_stock', $data)) {
+            return $data;
+        }
+        $grid = json_decode((string) $data['variant_stock'], true);
+        $data['variant_stock'] = is_array($grid) && $grid !== [] ? $grid : null;
+
+        return $data;
     }
 
     // "256GB=1199, 512GB=1399" → [['storage' => '256GB', 'price' => 1199.0], ...]
@@ -116,7 +131,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate($this->rules());
+        $data = $this->variantStock($request->validate($this->rules()));
         if (array_key_exists('warranty_months', $data) && $data['warranty_months'] === null) {
             unset($data['warranty_months']); // left empty: keep the 12-month default
         }
@@ -133,7 +148,7 @@ class ProductController extends Controller
     // POST instead of PUT because PHP doesn't parse multipart bodies on PUT
     public function update(Request $request, Product $product)
     {
-        $data = $request->validate($this->rules());
+        $data = $this->variantStock($request->validate($this->rules()));
         if (array_key_exists('warranty_months', $data) && $data['warranty_months'] === null) {
             unset($data['warranty_months']); // left empty: keep the 12-month default
         }

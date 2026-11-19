@@ -376,7 +376,8 @@ class _CardImageState extends State<_CardImage> {
                           errorBuilder: (_, _, _) => placeholder,
                         )
                       : Image.network(
-                          url,
+                          // A small WebP copy (≈20KB instead of ≈500KB)
+                          sizedImageUrl(url, 500),
                           fit: BoxFit.contain,
                           // Decode at card size, so scrolling stays smooth on a phone.
                           // Not on the web, where the plain <img> fallback can't be resized.

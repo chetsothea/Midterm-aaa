@@ -90,6 +90,8 @@ class ProductController extends Controller
 
         return [
             'telegram' => ltrim((string) config('shop.telegram'), '@'),
+            // Riel for one dollar, to show ៛ next to $ (the admin sets it)
+            'khr_rate' => \App\Support\Shipping::khrRate(),
             'brands' => $brandsOf(Product::query()),
             // Smartphone and 2nd Hand first, any other category after them
             'categories' => Category::orderBy('id')->get()

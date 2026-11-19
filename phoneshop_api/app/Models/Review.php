@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 // One customer's stars and comment for one phone
 class Review extends Model
 {
-    protected $fillable = ['product_id', 'user_id', 'rating', 'comment'];
+    protected $fillable = ['product_id', 'user_id', 'rating', 'comment', 'hidden_at'];
 
     protected function casts(): array
     {

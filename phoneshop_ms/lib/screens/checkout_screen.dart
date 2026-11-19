@@ -1,3 +1,4 @@
+import '../data/riel.dart';
 import 'package:flutter/material.dart';
 import '../data/api_service.dart';
 import '../data/models/voucher.dart';
@@ -30,9 +31,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _phone = TextEditingController(text: ApiService.currentUser?.phone);
   // The address saved on the account at registration, used unless the customer changes it
   final String _savedAddress = ApiService.currentUser?.address ?? '';
-  late bool _useSavedAddress = _savedAddress.isNotEmpty;
+  // The other saved addresses (id, label, address): "Work", "Mum's" ...
+  List<(int, String, String)> _extra = [];
+  // The saved address this order goes to; null = typing a new one below
+  late String? _picked = _savedAddress.isEmpty ? null : _savedAddress;
+  late String _pickedLabel = trf('អាសយដ្ឋានគណនី', 'Account address');
   // Built by AddressPicker from province → village (+ house/street); null until complete
   String? _address;
+  // A new address can be kept for next time, under a name
+  bool _keepNew = false;
+  String _newLabel = 'ការងារ';
   String _paymentMethod = 'khqr';
   bool _isLoading = false;
 
@@ -44,13 +52,45 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _voucherError;
   bool _checkingCode = false;
 
-  String get _currentAddress =>
-      _useSavedAddress ? _savedAddress : (_address ?? '');
+  String get _currentAddress => _picked ?? (_address ?? '');
 
   @override
   void initState() {
     super.initState();
     _refreshQuote();
+    if (ApiService.isLoggedIn) {
+      ApiService.fetchAddresses()
+          .then((list) {
+            if (!mounted) return;
+            setState(() {
+              _extra = list;
+              // No address on the account: start on the first saved one
+              if (_picked == null && _address == null && list.isNotEmpty) {
+                _pickedLabel = list.first.$2;
+                _picked = list.first.$3;
+              }
+            });
+            _refreshQuote();
+          })
+          .catchError((_) {});
+    }
+  }
+
+  void _pick(String? address, [String label = '']) {
+    setState(() {
+      _picked = address;
+      if (label.isNotEmpty) _pickedLabel = label;
+    });
+    _refreshQuote();
+  }
+
+  Future<void> _forget((int, String, String) a) async {
+    try {
+      await ApiService.deleteAddress(a.$1);
+      if (mounted) setState(() => _extra.remove(a));
+    } catch (e) {
+      if (mounted) showMessage(context, e.toString(), error: true);
+    }
   }
 
   // Asks the server again (address or code changed). A code that no longer
@@ -119,9 +159,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         customerEmail: _email.text.trim(),
         phone: _phone.text.trim(),
         // With the picker on screen, validate() above made sure every level is picked
-        address: _useSavedAddress ? _savedAddress : _address!,
+        address: _picked ?? _address!,
         voucherCode: _appliedCode,
       );
+      // A new address the customer wants to keep for next time
+      if (_picked == null && _keepNew && _address != null) {
+        ApiService.saveAddress(
+          _newLabel.trim().isEmpty ? 'ផ្សេងៗ' : _newLabel.trim(),
+          _address!,
+        ).catchError((_) {});
+      }
       Cart.instance.clear();
       if (!mounted) return;
 
@@ -489,6 +536,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           money(q?.total ?? cartTotal),
           bold: true,
         ),
+        if (Riel.shown)
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '≈ ${Riel.of(q?.total ?? cartTotal)}',
+              style: TextStyle(color: AppColors.muted, fontSize: 13),
+            ),
+          ),
         if (more != null && hasAddress)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
@@ -562,7 +617,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
               _section(3, tr('ទីតាំងដឹកជញ្ជូន'), [
-                if (_useSavedAddress)
+                if (_picked != null)
                   Container(
                     padding: const EdgeInsets.fromLTRB(12, 12, 4, 4),
                     decoration: BoxDecoration(
@@ -581,16 +636,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               color: Colors.redAccent,
                             ),
                             const SizedBox(width: AppSpacing.xs),
-                            Expanded(child: Text(_savedAddress)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _pickedLabel,
+                                    style: TextStyle(
+                                      color: AppColors.muted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(_picked!),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton.icon(
-                            onPressed: () {
-                              setState(() => _useSavedAddress = false);
-                              _refreshQuote();
-                            },
+                            onPressed: () => _pick(null),
                             icon: const Icon(
                               Icons.edit_location_alt_outlined,
                               size: 18,
@@ -602,20 +668,83 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   )
                 else ...[
+                  // The other saved addresses, one tap each
+                  for (final a in _extra)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      color: AppColors.surface,
+                      child: ListTile(
+                        leading: const Icon(Icons.bookmark_outline),
+                        title: Text(a.$2),
+                        subtitle: Text(
+                          a.$3,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => _pick(a.$3, a.$2),
+                        trailing: IconButton(
+                          tooltip: trf(
+                            'លុបអាសយដ្ឋាននេះ',
+                            'Forget this address',
+                          ),
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () => _forget(a),
+                        ),
+                      ),
+                    ),
+                  if (_extra.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: Text(
+                        trf('ឬ អាសយដ្ឋានថ្មី:', 'Or a new address:'),
+                        style: TextStyle(color: AppColors.muted),
+                      ),
+                    ),
                   AddressPicker(
                     onChanged: (address) {
                       _address = address;
                       _refreshQuote();
                     },
                   ),
+                  // Keep it for next time, under a short name
+                  if (ApiService.isLoggedIn) ...[
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _keepNew,
+                      onChanged: (v) => setState(() => _keepNew = v ?? false),
+                      title: Text(
+                        trf('រក្សាទុកអាសយដ្ឋាននេះ', 'Save this address'),
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    if (_keepNew)
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        children: [
+                          for (final label in [
+                            'ការងារ',
+                            'ផ្ទះឪពុកម្តាយ',
+                            'ផ្សេងៗ',
+                          ])
+                            ChoiceChip(
+                              label: Text(label),
+                              selected: _newLabel == label,
+                              onSelected: (_) =>
+                                  setState(() => _newLabel = label),
+                            ),
+                        ],
+                      ),
+                  ],
                   if (_savedAddress.isNotEmpty)
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          setState(() => _useSavedAddress = true);
-                          _refreshQuote();
-                        },
+                        onPressed: () => _pick(
+                          _savedAddress,
+                          trf('អាសយដ្ឋានគណនី', 'Account address'),
+                        ),
                         child: Text(tr('ប្រើទីតាំងដែលបានរក្សាទុក')),
                       ),
                     ),

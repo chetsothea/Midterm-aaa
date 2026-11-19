@@ -25,6 +25,14 @@ class Shipping
         Setting::setText('shipping_free_over', (string) $freeOver);
     }
 
+    // Riel for one dollar (shown next to prices); 0 = don't show riel
+    public static function khrRate(): int
+    {
+        $rate = Setting::text('khr_rate');
+
+        return $rate === '' ? 4100 : (int) $rate;
+    }
+
     // The address picker always writes the province, e.g. "..., រាជធានីភ្នំពេញ, កម្ពុជា"
     public static function isPhnomPenh(string $address): bool
     {

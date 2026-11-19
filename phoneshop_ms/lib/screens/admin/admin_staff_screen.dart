@@ -6,6 +6,7 @@ import '../../components/ux.dart';
 import '../../data/api_service.dart';
 import '../../hooks/language.dart';
 import '../../theme/app_theme.dart';
+import 'admin_activity_screen.dart';
 
 // Admin: staff accounts. Staff log in like the admin but only see the orders:
 // confirm, ship, enter IMEIs, check warranties. No money, prices or settings.
@@ -178,6 +179,19 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          IconButton(
+                            tooltip: trf('សកម្មភាពរបស់គាត់', 'Their activity'),
+                            icon: const Icon(Icons.history),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AdminActivityScreen(
+                                  userId: s['id'] as int,
+                                  name: '${s['name']}',
+                                ),
+                              ),
+                            ),
+                          ),
                           IconButton(
                             tooltip: trf(
                               'កែ / ប្តូរពាក្យសម្ងាត់',

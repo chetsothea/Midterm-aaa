@@ -47,6 +47,7 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
   final _pp = TextEditingController();
   final _province = TextEditingController();
   final _freeOver = TextEditingController();
+  final _khr = TextEditingController(); // riel for one dollar
   bool _savingRates = false;
 
   @override
@@ -57,7 +58,7 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
 
   @override
   void dispose() {
-    for (final c in [_pp, _province, _freeOver]) {
+    for (final c in [_pp, _province, _freeOver, _khr]) {
       c.dispose();
     }
     super.dispose();
@@ -74,6 +75,7 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
       _pp.text = _amount(rates.phnomPenh);
       _province.text = _amount(rates.province);
       _freeOver.text = _amount(rates.freeOver);
+      _khr.text = '${await ApiService.fetchKhrRate()}';
     } catch (e) {
       _error = e.toString();
     }
@@ -91,6 +93,7 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
           freeOver: double.tryParse(_freeOver.text) ?? 0,
         ),
       );
+      await ApiService.saveKhrRate(int.tryParse(_khr.text) ?? 0);
       if (mounted) {
         showMessage(
           context,
@@ -216,6 +219,24 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
               trf('ដឹកឥតគិតថ្លៃ ចាប់ពី (\$)', 'Free delivery from (\$)'),
               Icons.card_giftcard,
               helper: trf('0 = មិនដែលឥតគិតថ្លៃ', '0 = never free'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          // Shown as "≈ ៛4,100,000" next to prices
+          TextField(
+            controller: _khr,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: _input(
+              trf(
+                'អត្រាប្តូរប្រាក់ (៛ ក្នុង \$1)',
+                'Exchange rate (៛ per \$1)',
+              ),
+              Icons.currency_exchange,
+              helper: trf(
+                'បង្ហាញតម្លៃជារៀលក្បែរ \$ · 0 = មិនបង្ហាញ',
+                'Shows riel next to \$ · 0 = hide',
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

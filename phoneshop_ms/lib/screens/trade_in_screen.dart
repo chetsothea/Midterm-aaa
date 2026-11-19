@@ -56,7 +56,7 @@ class TradeInPhoto extends StatelessWidget {
   Widget build(BuildContext context) => ClipRRect(
     borderRadius: BorderRadius.circular(AppRadius.sm),
     child: Image.network(
-      url,
+      sizedImageUrl(url, size * MediaQuery.devicePixelRatioOf(context)),
       width: size,
       height: size,
       fit: BoxFit.cover,

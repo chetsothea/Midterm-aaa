@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -61,6 +62,38 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final Map<String, Uint8List> _colorPreviews = {};
   bool _isSaving = false;
 
+  // Stock per colour × size, or one shared count in [_stock]
+  late bool _perVariant = widget.phone?.hasVariantStock ?? false;
+  final Map<String, TextEditingController> _variantFields = {};
+
+  // Sizes typed in "256GB=1199, 512GB=1399"
+  List<String> get _sizeList => _storagePrices.text
+      .split(',')
+      .map((p) => p.split(RegExp(r'[=:]')).first.trim())
+      .where((p) => p.isNotEmpty)
+      .toList();
+
+  // Every colour × size the phone is sold in, as "Blue|256GB"
+  List<String> get _variantKeys => [
+    for (final c in _colorList.isEmpty ? [''] : _colorList)
+      for (final s in _sizeList.isEmpty ? [''] : _sizeList)
+        Phone.variantKey(c, s),
+  ];
+
+  bool get _hasVariants => _colorList.isNotEmpty || _sizeList.isNotEmpty;
+
+  TextEditingController _variantField(String key) => _variantFields.putIfAbsent(
+    key,
+    () =>
+        TextEditingController(text: '${widget.phone?.variantStock?[key] ?? 0}')
+          ..addListener(() => setState(() {})),
+  );
+
+  int get _variantTotal => _variantKeys.fold(
+    0,
+    (sum, k) => sum + (int.tryParse(_variantField(k).text) ?? 0),
+  );
+
   bool get _isEdit => widget.phone != null;
 
   List<String> get _colorList => _color.text
@@ -75,6 +108,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _categoryId = widget.phone?.categoryId;
     // Rebuild the per-colour picture list while the admin types colours
     _color.addListener(() => setState(() {}));
+    // ... and the stock grid while sizes are typed
+    _storagePrices.addListener(() => setState(() {}));
     ApiService.fetchCategories().then((list) {
       if (mounted) setState(() => _categories = list);
     });
@@ -95,6 +130,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       _storagePrices,
       _color,
       _description,
+      ..._variantFields.values,
     ]) {
       c.dispose();
     }
@@ -177,7 +213,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           // Sent even when empty, so clearing it removes the discount
           'discount_percent': _discount.text.trim(),
           'condition': _condition.text.trim(),
-          'stock': _stock.text.trim(),
+          'stock': _perVariant && _hasVariants
+              ? '$_variantTotal'
+              : _stock.text.trim(),
+          // Sent empty to go back to one shared count
+          'variant_stock': _perVariant && _hasVariants
+              ? jsonEncode({
+                  for (final k in _variantKeys)
+                    k: int.tryParse(_variantField(k).text) ?? 0,
+                })
+              : '',
           'warranty_months': _warranty.text.trim(),
           'ram': _ram.text.trim(),
           'storage': _storage.text.trim(),
@@ -415,12 +460,26 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: _field(
-                        _stock,
-                        'ស្តុក *',
-                        required: true,
-                        number: true,
-                      ),
+                      child: _perVariant && _hasVariants
+                          // Worked out from the grid below
+                          ? Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: InputDecorator(
+                                decoration: _decor('ស្តុកសរុប'),
+                                child: Text(
+                                  '$_variantTotal',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : _field(
+                              _stock,
+                              'ស្តុក *',
+                              required: true,
+                              number: true,
+                            ),
                     ),
                   ],
                 ),
@@ -485,6 +544,53 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 if (_colorList.isNotEmpty)
                   const SizedBox(height: AppSpacing.xxs),
               ]),
+              if (_hasVariants)
+                _section(Icons.grid_view_rounded, 'ស្តុកតាមពណ៌ និង Storage', [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _perVariant,
+                    onChanged: (v) => setState(() => _perVariant = v),
+                    title: const Text('រាប់ស្តុកដាច់ដោយឡែក'),
+                    subtitle: Text(
+                      _perVariant
+                          ? 'អតិថិជនទិញបានតែពណ៌/Storage ដែលមានក្នុងស្តុក'
+                          : 'បិទ: ស្តុកមួយលេខសម្រាប់គ្រប់ពណ៌ និង Storage',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  if (_perVariant)
+                    for (final key in _variantKeys)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                key
+                                    .split('|')
+                                    .where((p) => p.isNotEmpty)
+                                    .join(' · '),
+                                style: TextStyle(color: AppColors.text),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 96,
+                              child: TextFormField(
+                                controller: _variantField(key),
+                                keyboardType: TextInputType.number,
+                                textAlign: TextAlign.center,
+                                decoration: _decor('ចំនួន'),
+                                validator: (v) =>
+                                    int.tryParse(v!.trim()) == null ||
+                                        int.parse(v.trim()) < 0
+                                    ? 'លេខ'
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                ]),
               _section(Icons.notes, 'ការពិពណ៌នា', [
                 _field(_description, 'ការពិពណ៌នា', maxLines: 3),
               ]),

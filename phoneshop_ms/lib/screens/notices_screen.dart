@@ -5,7 +5,10 @@ import '../data/models/notice.dart';
 import '../hooks/language.dart';
 import '../hooks/notices.dart';
 import '../theme/app_theme.dart';
+import '../components/common.dart';
+import '../data/api_service.dart';
 import 'my_orders_screen.dart';
+import 'product_detail_screen.dart';
 import 'trade_in_screen.dart';
 
 String _ago(DateTime t) {
@@ -75,7 +78,21 @@ class _NoticesScreenState extends State<NoticesScreen> {
     Notices.instance.markAllRead();
   }
 
-  void _open(Notice n) {
+  void _open(Notice n) async {
+    // About a phone: open it as it is now
+    if (n.productId != null) {
+      try {
+        final phone = await ApiService.fetchPhone(n.productId!);
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ProductDetailScreen(phone: phone)),
+        );
+      } catch (e) {
+        if (mounted) showMessage(context, e.toString(), error: true);
+      }
+      return;
+    }
     final page = n.tradeInId != null
         ? const TradeInScreen()
         : n.orderId != null
@@ -89,6 +106,8 @@ class _NoticesScreenState extends State<NoticesScreen> {
   (IconData, Color) _look(Notice n) => switch (n.kind) {
     'payment' => (Icons.payments_outlined, AppColors.green),
     'trade_in' => (Icons.swap_horiz_rounded, AppColors.accent),
+    'stock' => (Icons.inventory_2_outlined, AppColors.green),
+    'price' => (Icons.trending_down_rounded, AppColors.red),
     _ when n.body.contains('បោះបង់') => (Icons.cancel_outlined, AppColors.red),
     _ => (Icons.local_shipping_outlined, AppColors.accent),
   };
